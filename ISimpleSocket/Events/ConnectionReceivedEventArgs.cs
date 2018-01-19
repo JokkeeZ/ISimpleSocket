@@ -29,10 +29,13 @@ namespace ISimpleSocket.Events
 {
 	public sealed class ConnectionReceivedEventArgs : EventArgs
 	{
+		public int ConnectionId { get; private set; }
+
 		public Socket Socket { get; private set; }
 
-		public ConnectionReceivedEventArgs(Socket socket)
+		public ConnectionReceivedEventArgs(int connectionId, Socket socket)
 		{
+			ConnectionId = connectionId;
 			Socket = socket;
 		}
 	}

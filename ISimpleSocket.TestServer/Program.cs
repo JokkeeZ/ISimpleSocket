@@ -26,7 +26,7 @@ namespace ISimpleSocket.TestServer
 
 		private void ConnectionReceived(object sender, ConnectionReceivedEventArgs e)
 		{
-			var connection = new Connection(0, e.Socket);
+			var connection = new Connection(e.ConnectionId, e.Socket);
 			if (connection.Start())
 			{
 				AddConnection(connection);
@@ -53,11 +53,6 @@ namespace ISimpleSocket.TestServer
 		{
 			var data = Encoding.Default.GetString(e.ReceivedData);
 			Console.WriteLine($"Server-side-client received: { data }");
-
-			if (data.Equals("Sup server?"))
-			{
-				SendData(Encoding.Default.GetBytes("I'm good."));
-			}
 		}
 
 		private void DataSend(object sender, ConnectionSendingDataEventArgs e)

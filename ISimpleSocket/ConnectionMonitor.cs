@@ -37,6 +37,8 @@ namespace ISimpleSocket
 
 		private readonly int _maxConnections;
 
+		public int ConnectionsCount => _connections.Count;
+
 		public ConnectionMonitor(int maxConnectionsCount)
 		{
 			_maxConnections = maxConnectionsCount;

@@ -86,7 +86,7 @@ namespace ISimpleSocket
 						var socketTask = _listener.AcceptSocketAsync();
 						var socket = await socketTask;
 
-						OnConnectionReceived?.Invoke(this, new ConnectionReceivedEventArgs(socket));
+						OnConnectionReceived?.Invoke(this, new ConnectionReceivedEventArgs(_connectionMonitor.ConnectionsCount, socket));
 					});
 				}
 			}
