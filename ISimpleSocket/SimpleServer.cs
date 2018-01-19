@@ -61,10 +61,10 @@ namespace ISimpleSocket
 			_connectionMonitor = new ConnectionMonitor(_maxConnections);
 		}
 
-		public SimpleServer(IPEndPoint endPoint, int maxConnectionsCount)
+		public SimpleServer(IPEndPoint endPoint, int maxConnections)
 			: this(endPoint)
 		{
-			_maxConnections = maxConnectionsCount;
+			_maxConnections = maxConnections;
 		}
 
 		public async Task StartAsync()

@@ -24,7 +24,7 @@
 // ---------------------------------------------------------------------------------
 using System;
 using System.Collections.Generic;
-using System.Threading;
+using System.Timers;
 
 using ISimpleSocket.Client;
 
@@ -32,19 +32,19 @@ namespace ISimpleSocket
 {
 	internal sealed class ConnectionMonitor : IDisposable
 	{
-		private readonly Timer _timer;
+		private readonly Timer _timer = new Timer();
 		private readonly List<ISimpleConnection> _connections;
-
 		private readonly int _maxConnections;
 
 		public int ConnectionsCount => _connections.Count;
 
-		public ConnectionMonitor(int maxConnectionsCount)
+		public ConnectionMonitor(int maxConnections)
 		{
-			_maxConnections = maxConnectionsCount;
-
-			_timer = new Timer(_ => MonitorDisposedConnection(), null, -1, -1);
+			_maxConnections = maxConnections;
 			_connections = new List<ISimpleConnection>(_maxConnections);
+
+			_timer.Interval = 500;
+			_timer.Elapsed += RemoveDisposedConnections;
 		}
 
 		public void AddConnection(ISimpleConnection connection)
@@ -53,27 +53,17 @@ namespace ISimpleSocket
 
 			if (_connections.Count == 1)
 			{
-				Start();
+				_timer?.Start();
 			}
 		}
 
-		private void Start()
-		{
-			_timer.Change(0, 500);
-		}
-
-		private void Stop()
-		{
-			_timer.Change(-1, -1);
-		}
-
-		private void MonitorDisposedConnection()
+		private void RemoveDisposedConnections(object sender, ElapsedEventArgs e)
 		{
 			_connections.RemoveAll(x => x.Disposed);
 
 			if (_connections.Count == 0)
 			{
-				Stop();
+				_timer?.Stop();
 			}
 		}
 
