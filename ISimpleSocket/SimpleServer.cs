@@ -77,6 +77,8 @@ namespace ISimpleSocket
 				return;
 			}
 
+			_listening = true;
+
 			try
 			{
 				while (!_token.IsCancellationRequested)
@@ -86,7 +88,10 @@ namespace ISimpleSocket
 						var socketTask = _listener.AcceptSocketAsync();
 						var socket = await socketTask;
 
-						OnConnectionReceived?.Invoke(this, new ConnectionReceivedEventArgs(_connectionMonitor.ConnectionsCount, socket));
+						var connectionsCount = _connectionMonitor.ConnectionsCount;
+						var connectionId = connectionsCount == _maxConnections ? -1 : connectionsCount;
+
+						OnConnectionReceived?.Invoke(this, new ConnectionReceivedEventArgs(connectionId, socket));
 					});
 				}
 			}
