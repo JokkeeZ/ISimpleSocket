@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27130.2024
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ISimpleSocket", "ISimpleSocket\ISimpleSocket.csproj", "{2E6CBAB7-5C1C-47A6-A0E1-AD58153BCC61}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ISimpleSocket.TestServer", "ISimpleSocket.TestServer\ISimpleSocket.TestServer.csproj", "{B950617A-206A-4161-9029-10AB0C7E623D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2E6CBAB7-5C1C-47A6-A0E1-AD58153BCC61}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2E6CBAB7-5C1C-47A6-A0E1-AD58153BCC61}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2E6CBAB7-5C1C-47A6-A0E1-AD58153BCC61}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2E6CBAB7-5C1C-47A6-A0E1-AD58153BCC61}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B950617A-206A-4161-9029-10AB0C7E623D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B950617A-206A-4161-9029-10AB0C7E623D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B950617A-206A-4161-9029-10AB0C7E623D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B950617A-206A-4161-9029-10AB0C7E623D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {FA826EBE-03D7-4DB1-AD67-4031683875BE}
+	EndGlobalSection
+EndGlobal
