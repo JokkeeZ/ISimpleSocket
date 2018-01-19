@@ -30,41 +30,40 @@ using System.Threading.Tasks;
 
 using ISimpleSocket.Client;
 using ISimpleSocket.Events;
+using log4net;
 
 namespace ISimpleSocket
 {
 	public abstract class SimpleServer : IDisposable
 	{
 		private readonly TcpListener _listener;
-		private readonly ConnectionMonitor _monitor;
 
 		private CancellationTokenSource _cts;
 		private CancellationToken _token;
 
 		private bool _listening;
-		private int _maxConnections = 1000;
 
 		public bool Listening => _listening;
 
 		public event EventHandler<ConnectionReceivedEventArgs> OnConnectionReceived;
 		public event EventHandler<ServerStartFailedEventArgs> OnServerStartFailed;
 
+		private readonly ILog log = LogManager.GetLogger(typeof(SimpleServer));
+
 		public SimpleServer(int port)
 		{
 			_listener = new TcpListener(IPAddress.Any, port);
-			_monitor = new ConnectionMonitor(_maxConnections);
 		}
 
 		public SimpleServer(IPEndPoint endPoint)
 		{
 			_listener = new TcpListener(endPoint);
-			_monitor = new ConnectionMonitor(_maxConnections);
 		}
 
 		public SimpleServer(IPEndPoint endPoint, int maxConnections)
 			: this(endPoint)
 		{
-			_maxConnections = maxConnections;
+			ConnectionMonitor.MaximumConnections = maxConnections;
 		}
 
 		public async Task StartAsync()
@@ -83,41 +82,52 @@ namespace ISimpleSocket
 				{
 					await Task.Run(async () =>
 					{
-						if (_monitor.State.Equals(MonitorState.SlotsAvailable))
+						if (ConnectionMonitor.State.Equals(MonitorState.SlotsAvailable))
 						{
 							var socketTask = _listener.AcceptSocketAsync();
 							var socket = await socketTask;
 
-							var connectionId = _monitor.ConnectionsCount;
+							var connectionId = ConnectionMonitor.ConnectionsCount;
 							OnConnectionReceived?.Invoke(this, new ConnectionReceivedEventArgs(connectionId, socket));
+
+							log.Debug($"New connection accepted with id: { connectionId }.");
 						}
 					});
 				}
+			}
+			catch (Exception ex)
+			{
+				log.Error(ex.Message, ex);
 			}
 			finally
 			{
 				_listener.Stop();
 				_listening = false;
+
+				log.Debug($"Listener stopped.");
 			}
 		}
 
 		protected void AddConnection(ISimpleConnection connection)
 		{
-			_monitor.AddConnection(connection);
+			ConnectionMonitor.AddConnection(connection);
 		}
 
 		private bool StartListener()
 		{
 			try
 			{
-				_listener.Start(_maxConnections);
+				_listener.Start(ConnectionMonitor.MaximumConnections);
 
 				_listening = true;
+				log.Debug($"Listener started.");
 				return true;
 			}
 			catch (SocketException ex)
 			{
 				OnServerStartFailed?.Invoke(this, new ServerStartFailedEventArgs(ex));
+
+				log.Error($"Failed to start listener, message: { ex.Message }", ex);
 				return false;
 			}
 		}
@@ -137,7 +147,7 @@ namespace ISimpleSocket
 				_cts?.Cancel();
 				_cts?.Dispose();
 
-				_monitor?.Dispose();
+				log.Debug($"Dispose({ disposing }) called, and object is disposed.");
 			}
 		}
 	}

@@ -24,7 +24,9 @@
 // ---------------------------------------------------------------------------------
 using System;
 using System.Net.Sockets;
+
 using ISimpleSocket.Client.Events;
+using log4net;
 
 namespace ISimpleSocket.Client
 {
@@ -40,10 +42,10 @@ namespace ISimpleSocket.Client
 		public bool Connected => _socket != null && _socket.Connected;
 
 		public event EventHandler<ConnectionClosedEventArgs> OnConnectionClosed;
-
 		public event EventHandler<ConnectionReceivedDataEventArgs> OnDataReceived;
-
 		public event EventHandler<ConnectionSendingDataEventArgs> OnDataSend;
+
+		private readonly ILog log = LogManager.GetLogger(typeof(SimpleConnection));
 
 		public SimpleConnection(int id, Socket sck, int bufferSize = 1024)
 		{
@@ -58,10 +60,14 @@ namespace ISimpleSocket.Client
 			try
 			{
 				BeginReceive();
+
+				log.Debug($"Connection started with id: { ConnectionId }");
 				return true;
 			}
-			catch
+			catch (Exception ex)
 			{
+				log.Error($"Failed to start connection with id: { ConnectionId }, exception message: { ex.Message }", ex);
+
 				Disconnect();
 				return false;
 			}
@@ -75,19 +81,29 @@ namespace ISimpleSocket.Client
 			{
 				received = _socket.EndReceive(iAr);
 			}
-			catch
+			catch (ObjectDisposedException)
 			{
+				log.Warn($"Connection with id: { ConnectionId } failed to read incoming data. (Socket was disposed)");
+				return;
+			}
+			catch (Exception ex)
+			{
+				log.Warn($"Connection with id: { ConnectionId } failed to read incoming data. Exception message: { ex.Message }", ex);
+
 				Disconnect();
 				return;
 			}
 
 			if (received <= 0)
 			{
+				log.Warn($"Connection with id: { ConnectionId } received zero bytes.");
+
 				Disconnect();
 				return;
 			}
 
 			ProcessReceivedData(received);
+
 			BeginReceive();
 		}
 
@@ -101,11 +117,13 @@ namespace ISimpleSocket.Client
 
 		private void BeginReceive()
 		{
-			var error = SocketError.Success;
-			_socket?.BeginReceive(_buffer, 0, _buffer.Length, SocketFlags.None, out error, new AsyncCallback(DataReceived), null);
-
-			if (error != SocketError.Success)
+			try
 			{
+				_socket?.BeginReceive(_buffer, 0, _buffer.Length, SocketFlags.None, new AsyncCallback(DataReceived), null);
+			}
+			catch (Exception ex)
+			{
+				log.Warn($"Connection with id: { ConnectionId } failed to begin receive incoming data. Exception message: { ex.Message }", ex);
 				Disconnect();
 			}
 		}
@@ -116,11 +134,15 @@ namespace ISimpleSocket.Client
 			{
 				_socket?.Shutdown(SocketShutdown.Both);
 				_socket?.BeginDisconnect(false, _ => _socket?.EndDisconnect(_), null);
+
+				log.Debug($"Connection with id: { ConnectionId } disconnected.");
 			}
 			finally
 			{
 				if (!Disposed)
 				{
+					log.Debug($"Connection with id: { ConnectionId } firing OnConnectionClosed event.");
+
 					OnConnectionClosed?.Invoke(this, new ConnectionClosedEventArgs(this));
 					Dispose();
 				}
@@ -145,6 +167,10 @@ namespace ISimpleSocket.Client
 			{
 				_socket.Dispose();
 				Disposed = true;
+
+				ConnectionMonitor.RemoveConnection(this);
+
+				log.Debug($"Connection with id: { ConnectionId } called  Dispose({ disposing }) and disposed.");
 			}
 		}
 	}

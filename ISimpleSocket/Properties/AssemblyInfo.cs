@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using System.Runtime.InteropServices;
+using log4net.Config;
 
 [assembly: AssemblyTitle("ISimpleSocket")]
 [assembly: AssemblyDescription("")]
@@ -14,5 +15,7 @@ using System.Runtime.InteropServices;
 [assembly: Guid("2e6cbab7-5c1c-47a6-a0e1-ad58153bcc61")]
 
 
-[assembly: AssemblyVersion("0.0.2")]
-[assembly: AssemblyFileVersion("0.0.2")]
+[assembly: AssemblyVersion("0.0.4")]
+[assembly: AssemblyFileVersion("0.0.4")]
+
+[assembly: XmlConfigurator(ConfigFile = "log4net.config")]

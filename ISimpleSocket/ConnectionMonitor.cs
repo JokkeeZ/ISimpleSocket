@@ -22,27 +22,27 @@
 //   THE SOFTWARE.
 // </license>
 // ---------------------------------------------------------------------------------
-using System;
-using System.Collections.Generic;
-using System.Timers;
+using System.Collections.Concurrent;
 
 using ISimpleSocket.Client;
+using log4net;
 
 namespace ISimpleSocket
 {
-	internal sealed class ConnectionMonitor : IDisposable
+	internal static class ConnectionMonitor
 	{
-		private readonly Timer _timer = new Timer();
-		private readonly List<ISimpleConnection> _slots;
-		private readonly int _maxConnections;
+		private static readonly ConcurrentBag<ISimpleConnection> _slots = new ConcurrentBag<ISimpleConnection>();
+		private static readonly ILog log = LogManager.GetLogger(typeof(ConnectionMonitor));
 
-		public int ConnectionsCount => _slots.Count;
+		public static int ConnectionsCount => _slots.Count;
 
-		public MonitorState State
+		public static int MaximumConnections { get; internal set; } = 1000;
+
+		public static MonitorState State
 		{
 			get
 			{
-				if (ConnectionsCount == _maxConnections)
+				if (ConnectionsCount == MaximumConnections)
 				{
 					return MonitorState.SlotsFull;
 				}
@@ -51,46 +51,20 @@ namespace ISimpleSocket
 			}
 		}
 
-		public ConnectionMonitor(int maxConnections)
+		public static void AddConnection(ISimpleConnection connection)
 		{
-			_maxConnections = maxConnections;
-			_slots = new List<ISimpleConnection>(_maxConnections);
-
-			_timer.Interval = 500;
-			_timer.Elapsed += RemoveDisposedConnections;
-		}
-
-		public void AddConnection(ISimpleConnection connection)
-		{
-			_slots.Add(connection);
-
-			if (_slots.Count == 1)
+			if (!_slots.TryTake(out connection))
 			{
-				_timer?.Start();
+				_slots.Add(connection);
+				log.Debug($"Added new connection. { _slots.Count } / { MaximumConnections } slots in-use.");
 			}
 		}
 
-		private void RemoveDisposedConnections(object sender, ElapsedEventArgs e)
+		public static void RemoveConnection(ISimpleConnection connection)
 		{
-			_slots.RemoveAll(x => x.Disposed);
-
-			if (_slots.Count == 0)
+			if (_slots.TryTake(out connection))
 			{
-				_timer?.Stop();
-			}
-		}
-
-		public void Dispose()
-		{
-			Dispose(true);
-			GC.SuppressFinalize(this);
-		}
-
-		private void Dispose(bool disposing)
-		{
-			if (disposing)
-			{
-				_timer?.Dispose();
+				log.Debug($"Removed disposed connection. { _slots.Count } / { MaximumConnections } slots in-use.");
 			}
 		}
 	}

@@ -22,11 +22,9 @@
 //   THE SOFTWARE.
 // </license>
 // ---------------------------------------------------------------------------------
-using System;
 
 namespace ISimpleSocket
 {
-	[Flags]
 	public enum MonitorState : int
 	{
 		SlotsAvailable = 0,

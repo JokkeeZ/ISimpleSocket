@@ -15,7 +15,7 @@ namespace ISimpleSocket.TestServer
 		public ConnectionListener(int port) : base(port)
 		{
 			OnConnectionReceived += ConnectionReceived;
-			OnListenerStartFailed += ListenerStartFailed;
+			OnServerStartFailed += ListenerStartFailed;
 		}
 
 		private void ListenerStartFailed(object sender, ServerStartFailedEventArgs e)

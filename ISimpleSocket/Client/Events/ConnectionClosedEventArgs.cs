@@ -28,9 +28,9 @@ namespace ISimpleSocket.Client.Events
 {
 	public sealed class ConnectionClosedEventArgs : EventArgs
 	{
-		public SimpleConnection Connection { get; private set; }
+		public ISimpleConnection Connection { get; private set; }
 
-		public ConnectionClosedEventArgs(SimpleConnection connection)
+		public ConnectionClosedEventArgs(ISimpleConnection connection)
 		{
 			Connection = connection;
 		}
