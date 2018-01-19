@@ -36,7 +36,7 @@ namespace ISimpleSocket
 	public abstract class SimpleServer : IDisposable
 	{
 		private readonly TcpListener _listener;
-		private readonly ConnectionMonitor _connectionMonitor;
+		private readonly ConnectionMonitor _monitor;
 
 		private CancellationTokenSource _cts;
 		private CancellationToken _token;
@@ -47,18 +47,18 @@ namespace ISimpleSocket
 		public bool Listening => _listening;
 
 		public event EventHandler<ConnectionReceivedEventArgs> OnConnectionReceived;
-		public event EventHandler<ServerStartFailedEventArgs> OnListenerStartFailed;
+		public event EventHandler<ServerStartFailedEventArgs> OnServerStartFailed;
 
 		public SimpleServer(int port)
 		{
 			_listener = new TcpListener(IPAddress.Any, port);
-			_connectionMonitor = new ConnectionMonitor(_maxConnections);
+			_monitor = new ConnectionMonitor(_maxConnections);
 		}
 
 		public SimpleServer(IPEndPoint endPoint)
 		{
 			_listener = new TcpListener(endPoint);
-			_connectionMonitor = new ConnectionMonitor(_maxConnections);
+			_monitor = new ConnectionMonitor(_maxConnections);
 		}
 
 		public SimpleServer(IPEndPoint endPoint, int maxConnections)
@@ -77,21 +77,20 @@ namespace ISimpleSocket
 				return;
 			}
 
-			_listening = true;
-
 			try
 			{
 				while (!_token.IsCancellationRequested)
 				{
 					await Task.Run(async () =>
 					{
-						var socketTask = _listener.AcceptSocketAsync();
-						var socket = await socketTask;
+						if (_monitor.State.Equals(MonitorState.SlotsAvailable))
+						{
+							var socketTask = _listener.AcceptSocketAsync();
+							var socket = await socketTask;
 
-						var connectionsCount = _connectionMonitor.ConnectionsCount;
-						var connectionId = connectionsCount == _maxConnections ? -1 : connectionsCount;
-
-						OnConnectionReceived?.Invoke(this, new ConnectionReceivedEventArgs(connectionId, socket));
+							var connectionId = _monitor.ConnectionsCount;
+							OnConnectionReceived?.Invoke(this, new ConnectionReceivedEventArgs(connectionId, socket));
+						}
 					});
 				}
 			}
@@ -104,7 +103,7 @@ namespace ISimpleSocket
 
 		protected void AddConnection(ISimpleConnection connection)
 		{
-			_connectionMonitor.AddConnection(connection);
+			_monitor.AddConnection(connection);
 		}
 
 		private bool StartListener()
@@ -118,7 +117,7 @@ namespace ISimpleSocket
 			}
 			catch (SocketException ex)
 			{
-				OnListenerStartFailed?.Invoke(this, new ServerStartFailedEventArgs(ex));
+				OnServerStartFailed?.Invoke(this, new ServerStartFailedEventArgs(ex));
 				return false;
 			}
 		}
@@ -138,7 +137,7 @@ namespace ISimpleSocket
 				_cts?.Cancel();
 				_cts?.Dispose();
 
-				_connectionMonitor?.Dispose();
+				_monitor?.Dispose();
 			}
 		}
 	}

@@ -1,5 +1,5 @@
 ﻿// ---------------------------------------------------------------------------------
-// <copyright file="ConnectionMonitor.cs" company="https://github.com/jokkeez/ISimpleSocket">
+// <copyright file="MonitorState.cs" company="https://github.com/jokkeez/ISimpleSocket">
 //   Copyright (c) 2018 JokkeeZ
 // </copyright>
 // <license>
@@ -23,75 +23,13 @@
 // </license>
 // ---------------------------------------------------------------------------------
 using System;
-using System.Collections.Generic;
-using System.Timers;
-
-using ISimpleSocket.Client;
 
 namespace ISimpleSocket
 {
-	internal sealed class ConnectionMonitor : IDisposable
+	[Flags]
+	public enum MonitorState : int
 	{
-		private readonly Timer _timer = new Timer();
-		private readonly List<ISimpleConnection> _slots;
-		private readonly int _maxConnections;
-
-		public int ConnectionsCount => _slots.Count;
-
-		public MonitorState State
-		{
-			get
-			{
-				if (ConnectionsCount == _maxConnections)
-				{
-					return MonitorState.SlotsFull;
-				}
-
-				return MonitorState.SlotsAvailable;
-			}
-		}
-
-		public ConnectionMonitor(int maxConnections)
-		{
-			_maxConnections = maxConnections;
-			_slots = new List<ISimpleConnection>(_maxConnections);
-
-			_timer.Interval = 500;
-			_timer.Elapsed += RemoveDisposedConnections;
-		}
-
-		public void AddConnection(ISimpleConnection connection)
-		{
-			_slots.Add(connection);
-
-			if (_slots.Count == 1)
-			{
-				_timer?.Start();
-			}
-		}
-
-		private void RemoveDisposedConnections(object sender, ElapsedEventArgs e)
-		{
-			_slots.RemoveAll(x => x.Disposed);
-
-			if (_slots.Count == 0)
-			{
-				_timer?.Stop();
-			}
-		}
-
-		public void Dispose()
-		{
-			Dispose(true);
-			GC.SuppressFinalize(this);
-		}
-
-		private void Dispose(bool disposing)
-		{
-			if (disposing)
-			{
-				_timer?.Dispose();
-			}
-		}
+		SlotsAvailable = 0,
+		SlotsFull = 1
 	}
 }
