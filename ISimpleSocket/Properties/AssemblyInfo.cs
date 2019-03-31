@@ -7,7 +7,7 @@ using log4net.Config;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("ISimpleSocket")]
-[assembly: AssemblyCopyright("Copyright © JokkeeZ 2018")]
+[assembly: AssemblyCopyright("Copyright © JokkeeZ 2018 - 2019")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

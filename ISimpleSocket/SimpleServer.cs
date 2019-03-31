@@ -1,28 +1,4 @@
-﻿// ---------------------------------------------------------------------------------
-// <copyright file="SimpleServer.cs" company="https://github.com/jokkeez/ISimpleSocket">
-//   Copyright (c) 2018 JokkeeZ
-// </copyright>
-// <license>
-//   Permission is hereby granted, free of charge, to any person obtaining a copy
-//   of this software and associated documentation files (the "Software"), to deal
-//   in the Software without restriction, including without limitation the rights
-//   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-//   copies of the Software, and to permit persons to whom the Software is
-//   furnished to do so, subject to the following conditions:
-//
-//   The above copyright notice and this permission notice shall be included in
-//   all copies or substantial portions of the Software.
-//
-//   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-//   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-//   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//   THE SOFTWARE.
-// </license>
-// ---------------------------------------------------------------------------------
-using System;
+﻿using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -41,9 +17,7 @@ namespace ISimpleSocket
 		private CancellationTokenSource _cts;
 		private CancellationToken _token;
 
-		private bool _listening;
-
-		public bool Listening => _listening;
+		public bool Listening { get; private set; }
 
 		public event EventHandler<ConnectionReceivedEventArgs> OnConnectionReceived;
 		public event EventHandler<ServerStartFailedEventArgs> OnServerStartFailed;
@@ -102,7 +76,7 @@ namespace ISimpleSocket
 			finally
 			{
 				_listener.Stop();
-				_listening = false;
+				Listening = false;
 
 				log.Debug($"Listener stopped.");
 			}
@@ -119,7 +93,7 @@ namespace ISimpleSocket
 			{
 				_listener.Start(ConnectionMonitor.MaximumConnections);
 
-				_listening = true;
+				Listening = true;
 				log.Debug($"Listener started.");
 				return true;
 			}
