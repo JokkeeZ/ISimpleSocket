@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading.Tasks;
 
 using ISimpleSocket.Client;
@@ -14,13 +13,6 @@ namespace ISimpleSocket.TestServer
 		public ConnectionListener(int port) : base(port)
 		{
 			OnConnectionReceived += ConnectionReceived;
-			OnServerStartFailed += ListenerStartFailed;
-		}
-
-		private void ListenerStartFailed(object sender, ServerStartFailedEventArgs e)
-		{
-			var exception = e.Exception.Message;
-			Console.WriteLine($"Listener start failed. Exception: { exception }");
 		}
 
 		private void ConnectionReceived(object sender, ConnectionReceivedEventArgs e)
@@ -28,8 +20,7 @@ namespace ISimpleSocket.TestServer
 			var connection = new Connection(e.ConnectionId, e.Socket);
 			if (connection.Start())
 			{
-				AddConnection(connection);
-				Console.WriteLine($"New connection added, with id: { connection.ConnectionId }");
+				// Do something with connection.
 			}
 		}
 	}
@@ -45,19 +36,17 @@ namespace ISimpleSocket.TestServer
 
 		private void ConnectionClosed(object sender, ConnectionClosedEventArgs e)
 		{
-			Console.WriteLine($"Connection with id: { ConnectionId } disconnected.");
+			// Do something when connection was closed.
 		}
 
 		private void DataReceived(object sender, ConnectionReceivedDataEventArgs e)
 		{
-			var data = Encoding.Default.GetString(e.ReceivedData);
-			Console.WriteLine($"Server-side-client received: { data }");
+			// Do something with received data.
 		}
 
 		private void DataSend(object sender, ConnectionSendingDataEventArgs e)
 		{
-			var data = Encoding.Default.GetString(e.Data);
-			Console.WriteLine($"Server-side-client sent: { data }");
+			// Do something when data was sent.
 		}
 	}
 

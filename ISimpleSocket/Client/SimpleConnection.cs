@@ -12,7 +12,6 @@ namespace ISimpleSocket.Client
 		private readonly byte[] _buffer;
 
 		public int ConnectionId { get; private set; }
-
 		public bool Disposed { get; private set; }
 
 		public bool Connected => _socket != null && _socket.Connected;
@@ -20,14 +19,15 @@ namespace ISimpleSocket.Client
 		public event EventHandler<ConnectionClosedEventArgs> OnConnectionClosed;
 		public event EventHandler<ConnectionReceivedDataEventArgs> OnDataReceived;
 		public event EventHandler<ConnectionSendingDataEventArgs> OnDataSend;
+		public event EventHandler<ConnectionSocketErrorEventArgs> OnSocketError;
 
 		private readonly ILog log = LogManager.GetLogger(typeof(SimpleConnection));
 
 		public SimpleConnection(int id, Socket sck, int bufferSize = 1024)
 		{
 			ConnectionId = id;
-			_socket = sck;
 
+			_socket = sck ?? throw new ArgumentNullException(nameof(sck));
 			_buffer = new byte[bufferSize];
 		}
 
@@ -38,6 +38,8 @@ namespace ISimpleSocket.Client
 				BeginReceive();
 
 				log.Debug($"Connection started with id: { ConnectionId }");
+
+				ConnectionMonitor.AddConnection(this);
 				return true;
 			}
 			catch (Exception ex)
@@ -55,24 +57,17 @@ namespace ISimpleSocket.Client
 
 			try
 			{
-				received = _socket.EndReceive(iAr);
-			}
-			catch (ObjectDisposedException)
-			{
-				log.Warn($"Connection with id: { ConnectionId } failed to read incoming data. (Socket was disposed)");
-				return;
+				received = _socket.EndReceive(iAr, out var error);
+				if (error != SocketError.Success)
+				{
+					OnSocketError?.Invoke(this, new ConnectionSocketErrorEventArgs(error));
+					Disconnect();
+					return;
+				}
 			}
 			catch (Exception ex)
 			{
-				log.Warn($"Connection with id: { ConnectionId } failed to read incoming data. Exception message: { ex.Message }", ex);
-
-				Disconnect();
-				return;
-			}
-
-			if (received <= 0)
-			{
-				log.Warn($"Connection with id: { ConnectionId } received zero bytes.");
+				log.Error(ex.Message, ex);
 
 				Disconnect();
 				return;
@@ -95,7 +90,7 @@ namespace ISimpleSocket.Client
 		{
 			try
 			{
-				_socket?.BeginReceive(_buffer, 0, _buffer.Length, SocketFlags.None, new AsyncCallback(DataReceived), null);
+				_socket?.BeginReceive(_buffer, 0, _buffer.Length, SocketFlags.None, DataReceived, null);
 			}
 			catch (Exception ex)
 			{
@@ -146,7 +141,7 @@ namespace ISimpleSocket.Client
 
 				ConnectionMonitor.RemoveConnection(this);
 
-				log.Debug($"Connection with id: { ConnectionId } called  Dispose({ disposing }) and disposed.");
+				log.Debug($"Connection with id: { ConnectionId } called Dispose({ disposing }) and disposed.");
 			}
 		}
 	}

@@ -42,6 +42,7 @@
     <Compile Include="Client\Events\ConnectionClosedEventArgs.cs" />
     <Compile Include="Client\Events\ConnectionReceivedDataEventArgs.cs" />
     <Compile Include="Client\Events\ConnectionSendingDataEventArgs.cs" />
+    <Compile Include="Client\Events\ConnectionSocketErrorEventArgs.cs" />
     <Compile Include="Client\ISimpleConnection.cs" />
     <Compile Include="Client\SimpleConnection.cs" />
     <Compile Include="Events\ServerStartFailedEventArgs.cs" />

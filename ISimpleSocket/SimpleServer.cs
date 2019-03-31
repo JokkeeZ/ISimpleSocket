@@ -3,8 +3,6 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-
-using ISimpleSocket.Client;
 using ISimpleSocket.Events;
 using log4net;
 
@@ -58,8 +56,7 @@ namespace ISimpleSocket
 					{
 						if (ConnectionMonitor.State.Equals(MonitorState.SlotsAvailable))
 						{
-							var socketTask = _listener.AcceptSocketAsync();
-							var socket = await socketTask;
+							var socket = await _listener.AcceptSocketAsync();
 
 							var connectionId = ConnectionMonitor.ConnectionsCount;
 							OnConnectionReceived?.Invoke(this, new ConnectionReceivedEventArgs(connectionId, socket));
@@ -80,11 +77,6 @@ namespace ISimpleSocket
 
 				log.Debug($"Listener stopped.");
 			}
-		}
-
-		protected void AddConnection(ISimpleConnection connection)
-		{
-			ConnectionMonitor.AddConnection(connection);
 		}
 
 		private bool StartListener()
