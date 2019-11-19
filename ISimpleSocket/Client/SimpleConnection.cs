@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Net.Sockets;
-
 using ISimpleSocket.Client.Events;
 using log4net;
 
@@ -12,7 +11,7 @@ namespace ISimpleSocket.Client
 		private readonly byte[] _buffer;
 
 		public int ConnectionId { get; private set; }
-		public bool Disposed { get; private set; }
+		public bool IsDisposed { get; private set; }
 
 		public bool Connected => _socket != null && _socket.Connected;
 
@@ -23,7 +22,7 @@ namespace ISimpleSocket.Client
 
 		private readonly ILog log = LogManager.GetLogger(typeof(SimpleConnection));
 
-		public SimpleConnection(int id, Socket sck, int bufferSize = 1024)
+		protected SimpleConnection(int id, Socket sck, int bufferSize = 1024)
 		{
 			ConnectionId = id;
 
@@ -39,10 +38,10 @@ namespace ISimpleSocket.Client
 
 				log.Debug($"Connection started with id: { ConnectionId }");
 
-				ConnectionMonitor.AddConnection(this);
+				ConnectionMonitor.AddConnection(ConnectionId);
 				return true;
 			}
-			catch (Exception ex)
+			catch (Exception ex) when (ex is SocketException || ex is ObjectDisposedException)
 			{
 				log.Error($"Failed to start connection with id: { ConnectionId }, exception message: { ex.Message }", ex);
 
@@ -53,7 +52,7 @@ namespace ISimpleSocket.Client
 
 		private void DataReceived(IAsyncResult iAr)
 		{
-			var received = 0;
+			int received;
 
 			try
 			{
@@ -65,7 +64,7 @@ namespace ISimpleSocket.Client
 					return;
 				}
 			}
-			catch (Exception ex)
+			catch (Exception ex) when (ex is SocketException || ex is ObjectDisposedException)
 			{
 				log.Error(ex.Message, ex);
 
@@ -73,7 +72,10 @@ namespace ISimpleSocket.Client
 				return;
 			}
 
-			ProcessReceivedData(received);
+			if (received != 0)
+			{
+				ProcessReceivedData(received);
+			}
 
 			BeginReceive();
 		}
@@ -92,7 +94,7 @@ namespace ISimpleSocket.Client
 			{
 				_socket?.BeginReceive(_buffer, 0, _buffer.Length, SocketFlags.None, DataReceived, null);
 			}
-			catch (Exception ex)
+			catch (Exception ex) when (ex is SocketException || ex is ObjectDisposedException)
 			{
 				log.Warn($"Connection with id: { ConnectionId } failed to begin receive incoming data. Exception message: { ex.Message }", ex);
 				Disconnect();
@@ -110,7 +112,7 @@ namespace ISimpleSocket.Client
 			}
 			finally
 			{
-				if (!Disposed)
+				if (!IsDisposed)
 				{
 					log.Debug($"Connection with id: { ConnectionId } firing OnConnectionClosed event.");
 
@@ -132,14 +134,14 @@ namespace ISimpleSocket.Client
 			GC.SuppressFinalize(this);
 		}
 
-		private void Dispose(bool disposing)
+		protected virtual void Dispose(bool disposing)
 		{
 			if (disposing && (_socket != null))
 			{
 				_socket.Dispose();
-				Disposed = true;
+				IsDisposed = true;
 
-				ConnectionMonitor.RemoveConnection(this);
+				ConnectionMonitor.RemoveConnection(ConnectionId);
 
 				log.Debug($"Connection with id: { ConnectionId } called Dispose({ disposing }) and disposed.");
 			}

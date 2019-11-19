@@ -1,14 +1,12 @@
-﻿using System.Collections.Concurrent;
-
-using ISimpleSocket.Client;
+﻿using System.Collections.Generic;
 using log4net;
 
 namespace ISimpleSocket
 {
 	internal static class ConnectionMonitor
 	{
-		private static readonly ConcurrentBag<ISimpleConnection> _slots = new ConcurrentBag<ISimpleConnection>();
-		private static readonly ILog log = LogManager.GetLogger(typeof(ConnectionMonitor));
+		private static readonly IList<int> _slots = new List<int>();
+		private static readonly ILog _log = LogManager.GetLogger(typeof(ConnectionMonitor));
 
 		public static int ConnectionsCount => _slots.Count;
 
@@ -27,20 +25,21 @@ namespace ISimpleSocket
 			}
 		}
 
-		public static void AddConnection(ISimpleConnection connection)
+		public static void AddConnection(int connectionId)
 		{
-			if (!_slots.TryTake(out connection))
+			if (!_slots.Contains(connectionId))
 			{
-				_slots.Add(connection);
-				log.Debug($"Added new connection. { _slots.Count } / { MaximumConnections } slots in-use.");
+				_slots.Add(connectionId);
+				_log.Debug($"Added new connection. { _slots.Count } / { MaximumConnections } slots in-use.");
 			}
 		}
 
-		public static void RemoveConnection(ISimpleConnection connection)
+		public static void RemoveConnection(int connectionId)
 		{
-			if (_slots.TryTake(out connection))
+			if (_slots.Contains(connectionId))
 			{
-				log.Debug($"Removed disposed connection. { _slots.Count } / { MaximumConnections } slots in-use.");
+				_slots.Remove(connectionId);
+				_log.Debug($"Removed disposed connection. { _slots.Count } / { MaximumConnections } slots in-use.");
 			}
 		}
 	}

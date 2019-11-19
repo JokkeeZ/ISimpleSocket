@@ -4,11 +4,13 @@ namespace ISimpleSocket.Client.Events
 {
 	public sealed class ConnectionSendingDataEventArgs : EventArgs
 	{
-		public byte[] Data { get; }
+		private readonly byte[] _data;
 
 		public ConnectionSendingDataEventArgs(byte[] data)
 		{
-			Data = data;
+			_data = data;
 		}
+
+		public byte[] GetData() => (byte[])_data.Clone();
 	}
 }

@@ -3,7 +3,7 @@
 	public interface ISimpleConnection
 	{
 		int ConnectionId { get; }
-		bool Disposed { get; }
+		bool IsDisposed { get; }
 		bool Connected { get; }
 
 		void SendData(byte[] data);

@@ -55,10 +55,9 @@ namespace ISimpleSocket.TestServer
 		static async Task Main(string[] args)
 		{
 			Console.Title = "ISimpleSocket SERVER";
-			using (var listener = new ConnectionListener(port: 2033))
-			{
-				await Task.Run(async () => await listener.StartAsync());
-			}
+
+			using var listener = new ConnectionListener(port: 2033);
+			await Task.Run(async () => await listener.StartAsync());
 		}
 	}
 }
