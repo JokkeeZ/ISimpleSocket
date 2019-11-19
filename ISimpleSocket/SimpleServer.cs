@@ -96,6 +96,9 @@ namespace ISimpleSocket
 		{
 			try
 			{
+				// Clear out old connections, if any.
+				ConnectionMonitor.Clear();
+
 				_listener.Start(ConnectionMonitor.MaximumConnections);
 
 				Listening = true;

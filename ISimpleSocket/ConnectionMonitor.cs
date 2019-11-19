@@ -42,5 +42,7 @@ namespace ISimpleSocket
 				_log.Debug($"Removed disposed connection. { _slots.Count } / { MaximumConnections } slots in-use.");
 			}
 		}
+
+		public static void Clear() => _slots.Clear();
 	}
 }
