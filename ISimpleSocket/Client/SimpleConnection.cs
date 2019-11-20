@@ -22,13 +22,19 @@ namespace ISimpleSocket.Client
 
 		private readonly ILog log = LogManager.GetLogger(typeof(SimpleConnection));
 
-		protected SimpleConnection(int id, Socket sck, int bufferSize = 1024)
+		protected SimpleConnection(int id, Socket socket, int bufferSize = 1024)
 		{
 			ConnectionId = id;
 
-			_socket = sck ?? throw new ArgumentNullException(nameof(sck));
+			_socket = socket ?? throw new ArgumentNullException(nameof(socket));
 			_buffer = new byte[bufferSize];
 		}
+
+		protected SimpleConnection(Socket socket, int bufferSize = 1024)
+			: this(0, socket, bufferSize) { }
+
+		protected SimpleConnection(Socket socket)
+			: this(socket, 1024) { }
 
 		public bool Start()
 		{
