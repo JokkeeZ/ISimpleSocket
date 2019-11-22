@@ -5,23 +5,57 @@ using log4net;
 
 namespace ISimpleSocket.Client
 {
-	public abstract class SimpleConnection : IDisposable, ISimpleConnection
+	/// <summary>
+	/// Represents an connection for <see cref="SimpleServer"/> instance.
+	/// </summary>
+	public abstract class SimpleConnection : ISimpleConnection
 	{
 		private readonly Socket _socket;
 		private readonly byte[] _buffer;
 
-		public int ConnectionId { get; private set; }
-		public bool IsDisposed { get; private set; }
-
-		public bool Connected => _socket != null && _socket.Connected;
-
-		public event EventHandler<ConnectionClosedEventArgs> OnConnectionClosed;
-		public event EventHandler<ConnectionReceivedDataEventArgs> OnDataReceived;
-		public event EventHandler<ConnectionSendingDataEventArgs> OnDataSend;
-		public event EventHandler<ConnectionSocketErrorEventArgs> OnSocketError;
-
 		private readonly ILog log = LogManager.GetLogger(typeof(SimpleConnection));
 
+		/// <summary>
+		/// Unique connection id.
+		/// </summary>
+		public int ConnectionId { get; private set; }
+
+		/// <summary>
+		/// Gets a value that indicates, if connection is disposed.
+		/// </summary>
+		public bool IsDisposed { get; private set; }
+
+		/// <summary>
+		/// Gets a value that indicates, if connection is connected to the server.
+		/// </summary>
+		public bool Connected => _socket != null && _socket.Connected;
+
+		/// <summary>
+		/// On connection closed event handler.
+		/// </summary>
+		public event EventHandler<ConnectionClosedEventArgs> OnConnectionClosed;
+
+		/// <summary>
+		/// On data received event handler.
+		/// </summary>
+		public event EventHandler<ConnectionReceivedDataEventArgs> OnDataReceived;
+
+		/// <summary>
+		/// On data send event handler.
+		/// </summary>
+		public event EventHandler<ConnectionSendingDataEventArgs> OnDataSend;
+
+		/// <summary>
+		/// On socket error event handler.
+		/// </summary>
+		public event EventHandler<ConnectionSocketErrorEventArgs> OnSocketError;
+
+		/// <summary>
+		/// Initializes an new instance of the <see cref="SimpleConnection"/> with id, socket and buffer size.
+		/// </summary>
+		/// <param name="id">Connection id.</param>
+		/// <param name="socket">Connection socket.</param>
+		/// <param name="bufferSize">Maximum amount of bytes buffer can have.</param>
 		protected SimpleConnection(int id, Socket socket, int bufferSize = 1024)
 		{
 			ConnectionId = id;
@@ -30,12 +64,25 @@ namespace ISimpleSocket.Client
 			_buffer = new byte[bufferSize];
 		}
 
+		/// <summary>
+		/// Initializes an new instance of the <see cref="SimpleConnection"/> with socket and buffer size.
+		/// </summary>
+		/// <param name="socket">Connection socket.</param>
+		/// <param name="bufferSize">Maximum amount of bytes buffer can have.</param>
 		protected SimpleConnection(Socket socket, int bufferSize = 1024)
 			: this(0, socket, bufferSize) { }
 
+		/// <summary>
+		/// Initializes an new instance of the <see cref="SimpleConnection"/> with socket.
+		/// </summary>
+		/// <param name="socket">Connection socket.</param>
 		protected SimpleConnection(Socket socket)
 			: this(socket, 1024) { }
 
+		/// <summary>
+		/// Starts connection to the server.
+		/// </summary>
+		/// <returns>Returns true if connection started successfully; otherwise false.</returns>
 		public bool Start()
 		{
 			try
@@ -98,7 +145,13 @@ namespace ISimpleSocket.Client
 		{
 			try
 			{
-				_socket?.BeginReceive(_buffer, 0, _buffer.Length, SocketFlags.None, DataReceived, null);
+				var error = SocketError.Success;
+
+				_socket?.BeginReceive(_buffer, 0, _buffer.Length, SocketFlags.None, out error, DataReceived, null);
+				if (error != SocketError.Success)
+				{
+					OnSocketError?.Invoke(this, new ConnectionSocketErrorEventArgs(error));
+				}
 			}
 			catch (Exception ex) when (ex is SocketException || ex is ObjectDisposedException)
 			{
@@ -107,6 +160,9 @@ namespace ISimpleSocket.Client
 			}
 		}
 
+		/// <summary>
+		/// Disconnects from the server.
+		/// </summary>
 		public void Disconnect()
 		{
 			try
@@ -128,18 +184,29 @@ namespace ISimpleSocket.Client
 			}
 		}
 
+		/// <summary>
+		/// Sends data to the server.
+		/// </summary>
+		/// <param name="data">Data to be sent.</param>
 		public void SendData(byte[] data)
 		{
 			OnDataSend?.Invoke(this, new ConnectionSendingDataEventArgs(data));
 			_socket?.BeginSend(data, 0, data.Length, 0, _ => _socket?.EndSend(_), null);
 		}
 
+		/// <summary>
+		/// Releases all resources used by the current instance of the <see cref="SimpleConnection"/>.
+		/// </summary>
 		public void Dispose()
 		{
 			Dispose(true);
 			GC.SuppressFinalize(this);
 		}
 
+		/// <summary>
+		/// Releases all resourced used by current instance of <see cref="SimpleConnection"/>.
+		/// </summary>
+		/// <param name="disposing">If true, disposes all managed resourced used by current instance of <see cref="SimpleConnection"/>.</param>
 		protected virtual void Dispose(bool disposing)
 		{
 			if (disposing && (_socket != null))

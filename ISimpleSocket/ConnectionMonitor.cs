@@ -5,8 +5,8 @@ namespace ISimpleSocket
 {
 	internal static class ConnectionMonitor
 	{
-		private static readonly IList<int> _slots = new List<int>();
-		private static readonly ILog _log = LogManager.GetLogger(typeof(ConnectionMonitor));
+		static readonly IList<int> _slots = new List<int>();
+		static readonly ILog _log = LogManager.GetLogger(typeof(ConnectionMonitor));
 
 		public static int ConnectionsCount => _slots.Count;
 
