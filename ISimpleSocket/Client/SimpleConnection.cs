@@ -85,9 +85,19 @@ namespace ISimpleSocket.Client
 		/// Establishes a connection to a server.
 		/// </summary>
 		/// <param name="endpoint">An EndPoint that represents the server address.</param>
-		protected async Task ConnectAsync(IPEndPoint endpoint)
+		/// <returns>Returns <see cref="SocketError.Success"/>, if connection was created; otherwise <see cref="SocketError"/>.</returns>
+		protected async Task<SocketError> ConnectAsync(IPEndPoint endpoint)
 		{
-			await _socket.ConnectAsync(endpoint).ConfigureAwait(false);
+			try
+			{
+				await _socket.ConnectAsync(endpoint).ConfigureAwait(false);
+				return SocketError.Success;
+			}
+			catch (SocketException ex)
+			{
+				log.Error(ex.Message, ex);
+				return ex.SocketErrorCode;
+			}
 		}
 
 		/// <summary>
