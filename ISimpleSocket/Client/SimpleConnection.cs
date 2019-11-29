@@ -167,10 +167,13 @@ namespace ISimpleSocket.Client
 		{
 			try
 			{
-				_socket?.Shutdown(SocketShutdown.Both);
-				_socket?.BeginDisconnect(false, _ => _socket?.EndDisconnect(_), null);
+				if (!IsDisposed)
+				{
+					_socket?.Shutdown(SocketShutdown.Both);
+					_socket?.BeginDisconnect(false, _ => _socket?.EndDisconnect(_), null);
 
-				log.Debug($"Connection with id: { ConnectionId } disconnected.");
+					log.Debug($"Connection with id: { ConnectionId } disconnected.");
+				}
 			}
 			finally
 			{
@@ -193,6 +196,12 @@ namespace ISimpleSocket.Client
 			OnDataSend?.Invoke(this, new ConnectionSendingDataEventArgs(data));
 			_socket?.BeginSend(data, 0, data.Length, 0, _ => _socket?.EndSend(_), null);
 		}
+
+		/// <summary>
+		/// Gets current <see cref="Socket"/> instance.
+		/// </summary>
+		/// <returns>Returns current <see cref="Socket"/> instance.</returns>
+		protected Socket GetSocketInstance() => _socket;
 
 		/// <summary>
 		/// Releases all resources used by the current instance of the <see cref="SimpleConnection"/>.
