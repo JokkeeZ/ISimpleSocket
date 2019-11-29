@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Net;
 using System.Net.Sockets;
+using System.Threading.Tasks;
 using ISimpleSocket.Client.Events;
 using log4net;
 
@@ -78,6 +80,15 @@ namespace ISimpleSocket.Client
 		/// <param name="socket">Connection socket.</param>
 		protected SimpleConnection(Socket socket)
 			: this(socket, 1024) { }
+
+		/// <summary>
+		/// Establishes a connection to a server.
+		/// </summary>
+		/// <param name="endpoint">An EndPoint that represents the server address.</param>
+		protected async Task ConnectAsync(IPEndPoint endpoint)
+		{
+			await _socket.ConnectAsync(endpoint).ConfigureAwait(false);
+		}
 
 		/// <summary>
 		/// Starts receiving data from server, if connected.
@@ -223,14 +234,17 @@ namespace ISimpleSocket.Client
 		/// <param name="disposing">If true, disposes all managed resourced used by current instance of <see cref="SimpleConnection"/>.</param>
 		protected virtual void Dispose(bool disposing)
 		{
-			if (disposing && (_socket != null))
+			if (!IsDisposed)
 			{
-				_socket.Dispose();
-				IsDisposed = true;
+				if (disposing && (_socket != null))
+				{
+					_socket.Dispose();
+					IsDisposed = true;
 
-				ConnectionMonitor.RemoveConnection(ConnectionId);
+					ConnectionMonitor.RemoveConnection(ConnectionId);
 
-				log.Debug($"Connection with id: { ConnectionId } called Dispose({ disposing }) and disposed.");
+					log.Debug($"Connection with id: { ConnectionId } called Dispose({ disposing }) and disposed.");
+				}
 			}
 		}
 	}
