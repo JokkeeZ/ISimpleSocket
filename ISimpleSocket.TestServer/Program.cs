@@ -18,7 +18,7 @@ namespace ISimpleSocket.TestServer
 		private void ConnectionReceived(object sender, ConnectionReceivedEventArgs e)
 		{
 			var connection = new Connection(e.ConnectionId, e.Socket);
-			if (connection.Start())
+			if (connection.StartReceivingData())
 			{
 				// Do something with connection.
 			}

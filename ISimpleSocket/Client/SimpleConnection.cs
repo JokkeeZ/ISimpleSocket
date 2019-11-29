@@ -80,13 +80,18 @@ namespace ISimpleSocket.Client
 			: this(socket, 1024) { }
 
 		/// <summary>
-		/// Starts connection to the server.
+		/// Starts receiving data from server, if connected.
 		/// </summary>
-		/// <returns>Returns true if connection started successfully; otherwise false.</returns>
-		public bool Start()
+		/// <returns>Returns true, if data was received successfully; otherwise false.</returns>
+		public bool StartReceivingData()
 		{
 			try
 			{
+				if (!Connected)
+				{
+					return false;
+				}
+
 				BeginReceive();
 
 				log.Debug($"Connection started with id: { ConnectionId }");
@@ -96,7 +101,7 @@ namespace ISimpleSocket.Client
 			}
 			catch (Exception ex) when (ex is SocketException || ex is ObjectDisposedException)
 			{
-				log.Error($"Failed to start connection with id: { ConnectionId }, exception message: { ex.Message }", ex);
+				log.Error($"Failed to receiving data with id: { ConnectionId }, exception message: { ex.Message }", ex);
 
 				Disconnect();
 				return false;
