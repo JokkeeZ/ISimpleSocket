@@ -91,7 +91,7 @@ namespace ISimpleSocket
 						{
 							var socket = await _listener.AcceptSocketAsync().ConfigureAwait(false);
 
-							var connectionId = ConnectionMonitor.ConnectionsCount;
+							var connectionId = ConnectionMonitor.GetFirstAvailableSlot();
 							OnConnectionReceived?.Invoke(this, new ConnectionReceivedEventArgs(connectionId, socket));
 
 							_log.Debug($"New connection accepted with id: { connectionId }.");

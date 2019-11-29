@@ -25,6 +25,16 @@ namespace ISimpleSocket
 			}
 		}
 
+		public static int GetFirstAvailableSlot()
+		{
+			if (!_slots.Contains(ConnectionsCount - 1) && (ConnectionsCount - 1 >= 0))
+			{
+				return ConnectionsCount - 1;
+			}
+
+			return ConnectionsCount;
+		}
+
 		public static void AddConnection(int connectionId)
 		{
 			if (!_slots.Contains(connectionId))
