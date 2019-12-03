@@ -139,7 +139,6 @@ namespace ISimpleSocket.Client
 				if (error != SocketError.Success)
 				{
 					OnSocketError?.Invoke(this, new ConnectionSocketErrorEventArgs(error));
-					Disconnect();
 					return;
 				}
 			}
@@ -151,10 +150,13 @@ namespace ISimpleSocket.Client
 				return;
 			}
 
-			if (received != 0)
+			if (received <= 0)
 			{
-				ProcessReceivedData(received);
+				Disconnect();
+				return;
 			}
+
+			ProcessReceivedData(received);
 
 			BeginReceive();
 		}
@@ -193,13 +195,10 @@ namespace ISimpleSocket.Client
 		{
 			try
 			{
-				if (!IsDisposed)
-				{
-					_socket?.Shutdown(SocketShutdown.Both);
-					_socket?.BeginDisconnect(false, _ => _socket?.EndDisconnect(_), null);
+				_socket?.Shutdown(SocketShutdown.Both);
+				_socket?.BeginDisconnect(false, _ => _socket?.EndDisconnect(_), null);
 
-					log.Debug($"Connection with id: { ConnectionId } disconnected.");
-				}
+				log.Debug($"Connection with id: { ConnectionId } disconnected.");
 			}
 			finally
 			{
