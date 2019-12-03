@@ -10,7 +10,13 @@ namespace ISimpleSocket.Client
 		/// <summary>
 		/// Unique connection id.
 		/// </summary>
+		[Obsolete("ConnectionId is deprecated, please use Id instead.")]
 		int ConnectionId { get; }
+
+		/// <summary>
+		/// Unique connection id.
+		/// </summary>
+		int Id { get; }
 
 		/// <summary>
 		/// Gets a value that indicates, if connection is disposed.

@@ -20,7 +20,8 @@ namespace ISimpleSocket.Client
 		/// <summary>
 		/// Unique connection id.
 		/// </summary>
-		public int ConnectionId { get; private set; }
+		[Obsolete("ConnectionId is deprecated, please use Id instead.")]
+		public int ConnectionId => Id;
 
 		/// <summary>
 		/// Gets a value that indicates, if connection is disposed.
@@ -31,6 +32,8 @@ namespace ISimpleSocket.Client
 		/// Gets a value that indicates, if connection is connected to the server.
 		/// </summary>
 		public bool Connected => _socket != null && _socket.Connected;
+
+		public int Id { get; }
 
 		/// <summary>
 		/// On connection closed event handler.
@@ -60,7 +63,7 @@ namespace ISimpleSocket.Client
 		/// <param name="bufferSize">Maximum amount of bytes buffer can have.</param>
 		protected SimpleConnection(int id, Socket socket, int bufferSize = 1024)
 		{
-			ConnectionId = id;
+			Id = id;
 
 			_socket = socket ?? throw new ArgumentNullException(nameof(socket));
 			_buffer = new byte[bufferSize];
@@ -115,14 +118,14 @@ namespace ISimpleSocket.Client
 
 				BeginReceive();
 
-				log.Debug($"Connection started with id: { ConnectionId }");
+				log.Debug($"Connection started with id: { Id }");
 
-				ConnectionMonitor.AddConnection(ConnectionId);
+				ConnectionMonitor.AddConnection(Id);
 				return true;
 			}
 			catch (Exception ex) when (ex is SocketException || ex is ObjectDisposedException)
 			{
-				log.Error($"Failed to receiving data with id: { ConnectionId }, exception message: { ex.Message }", ex);
+				log.Error($"Failed to receiving data with id: { Id }, exception message: { ex.Message }", ex);
 
 				Disconnect();
 				return false;
@@ -183,7 +186,7 @@ namespace ISimpleSocket.Client
 			}
 			catch (Exception ex) when (ex is SocketException || ex is ObjectDisposedException)
 			{
-				log.Warn($"Connection with id: { ConnectionId } failed to begin receive incoming data. Exception message: { ex.Message }", ex);
+				log.Warn($"Connection with id: { Id } failed to begin receive incoming data. Exception message: { ex.Message }", ex);
 				Disconnect();
 			}
 		}
@@ -198,13 +201,13 @@ namespace ISimpleSocket.Client
 				_socket?.Shutdown(SocketShutdown.Both);
 				_socket?.BeginDisconnect(false, _ => _socket?.EndDisconnect(_), null);
 
-				log.Debug($"Connection with id: { ConnectionId } disconnected.");
+				log.Debug($"Connection with id: { Id } disconnected.");
 			}
 			finally
 			{
 				if (!IsDisposed)
 				{
-					log.Debug($"Connection with id: { ConnectionId } firing OnConnectionClosed event.");
+					log.Debug($"Connection with id: { Id } firing OnConnectionClosed event.");
 
 					OnConnectionClosed?.Invoke(this, new ConnectionClosedEventArgs(this));
 					Dispose();
@@ -250,9 +253,9 @@ namespace ISimpleSocket.Client
 					_socket.Dispose();
 					IsDisposed = true;
 
-					ConnectionMonitor.RemoveConnection(ConnectionId);
+					ConnectionMonitor.RemoveConnection(Id);
 
-					log.Debug($"Connection with id: { ConnectionId } called Dispose({ disposing }) and disposed.");
+					log.Debug($"Connection with id: { Id } called Dispose({ disposing }) and disposed.");
 				}
 			}
 		}
