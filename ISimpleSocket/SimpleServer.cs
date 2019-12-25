@@ -94,7 +94,7 @@ namespace ISimpleSocket
 							var connectionId = ConnectionMonitor.GetFirstAvailableSlot();
 							OnConnectionReceived?.Invoke(this, new ConnectionReceivedEventArgs(connectionId, socket));
 
-							_log.Debug($"New connection accepted with id: { connectionId }.");
+							_log.Info($"New connection accepted with id: { connectionId }.");
 						}
 					})
 					.ConfigureAwait(false);
@@ -133,7 +133,7 @@ namespace ISimpleSocket
 				_listener.Start(ConnectionMonitor.MaximumConnections);
 
 				Listening = true;
-				_log.Debug($"Listener started.");
+				_log.Info($"Listener started.");
 
 				return true;
 			}

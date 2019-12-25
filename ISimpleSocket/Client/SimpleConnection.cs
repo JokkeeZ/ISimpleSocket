@@ -127,7 +127,11 @@ namespace ISimpleSocket.Client
 			{
 				log.Error($"Failed to receiving data with id: { Id }, exception message: { ex.Message }", ex);
 
-				Disconnect();
+				if (!IsDisposed)
+				{
+					Disconnect();
+				}
+
 				return false;
 			}
 		}
@@ -149,13 +153,21 @@ namespace ISimpleSocket.Client
 			{
 				log.Error(ex.Message, ex);
 
-				Disconnect();
+				if (!IsDisposed)
+				{
+					Disconnect();
+				}
+
 				return;
 			}
 
 			if (received <= 0)
 			{
-				Disconnect();
+				if (!IsDisposed)
+				{
+					Disconnect();
+				}
+
 				return;
 			}
 
@@ -186,8 +198,12 @@ namespace ISimpleSocket.Client
 			}
 			catch (Exception ex) when (ex is SocketException || ex is ObjectDisposedException)
 			{
-				log.Warn($"Connection with id: { Id } failed to begin receive incoming data. Exception message: { ex.Message }", ex);
-				Disconnect();
+				log.Info($"Handled exception! Connection with id: { Id } failed to begin receive incoming data. Reason: { ex.Message }");
+
+				if (!IsDisposed)
+				{
+					Disconnect();
+				}
 			}
 		}
 
