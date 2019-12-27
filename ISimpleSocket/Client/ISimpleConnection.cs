@@ -10,12 +10,6 @@ namespace ISimpleSocket.Client
 		/// <summary>
 		/// Unique connection id.
 		/// </summary>
-		[Obsolete("ConnectionId is deprecated, please use Id instead.")]
-		int ConnectionId { get; }
-
-		/// <summary>
-		/// Unique connection id.
-		/// </summary>
 		int Id { get; }
 
 		/// <summary>
@@ -27,6 +21,16 @@ namespace ISimpleSocket.Client
 		/// Gets a value that indicates, if connection is connected to the server.
 		/// </summary>
 		bool Connected { get; }
+
+		/// <summary>
+		/// Gets a server where connection belongs.
+		/// </summary>
+		public ISimpleServer Server { get; }
+
+		/// <summary>
+		/// Starts accepting new packets from the <see cref="ISimpleServer"/>.
+		/// </summary>
+		bool Start();
 
 		/// <summary>
 		/// Sends data to the server.

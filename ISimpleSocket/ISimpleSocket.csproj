@@ -45,9 +45,10 @@
     <Compile Include="Client\ISimpleConnection.cs" />
     <Compile Include="Client\SimpleConnection.cs" />
     <Compile Include="Events\ServerStartFailedEventArgs.cs" />
+    <Compile Include="ISimpleServer.cs" />
     <Compile Include="MonitorState.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ConnectionMonitor.cs" />
+    <Compile Include="ServerMonitor.cs" />
     <Compile Include="Events\ConnectionReceivedEventArgs.cs" />
     <Compile Include="SimpleServer.cs" />
   </ItemGroup>

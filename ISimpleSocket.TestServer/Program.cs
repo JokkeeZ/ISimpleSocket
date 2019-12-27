@@ -17,8 +17,8 @@ namespace ISimpleSocket.TestServer
 
 		private void ConnectionReceived(object sender, ConnectionReceivedEventArgs e)
 		{
-			var connection = new Connection(e.ConnectionId, e.Socket);
-			if (connection.StartReceivingData())
+			var connection = new Connection(this, e.Socket, e.ConnectionId);
+			if (connection.Start())
 			{
 				// Do something with connection.
 			}
@@ -27,7 +27,7 @@ namespace ISimpleSocket.TestServer
 
 	class Connection : SimpleConnection
 	{
-		public Connection(int id, Socket socket) : base(id, socket)
+		public Connection(ISimpleServer server, Socket socket, int id) : base(server, socket, id)
 		{
 			OnDataSend += DataSend;
 			OnDataReceived += DataReceived;
@@ -57,7 +57,7 @@ namespace ISimpleSocket.TestServer
 			Console.Title = "ISimpleSocket SERVER";
 
 			using var listener = new ConnectionListener(port: 2033);
-			await Task.Run(async () => await listener.StartAsync());
+			await listener.StartAsync();
 		}
 	}
 }

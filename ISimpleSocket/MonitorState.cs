@@ -3,6 +3,6 @@
 	internal enum MonitorState : int
 	{
 		SlotsAvailable = 0,
-		SlotsFull = 1
+		SlotsFull,
 	}
 }

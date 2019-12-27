@@ -11,14 +11,12 @@ namespace ISimpleSocket
 	/// <summary>
 	/// Provides a wrapper for <see cref="TcpListener"/> with asynchronous socket accepting.
 	/// </summary>
-	public abstract class SimpleServer : IDisposable
+	public abstract class SimpleServer : ISimpleServer, IDisposable
 	{
-		private readonly TcpListener _listener;
+		private readonly TcpListener listener;
+		private readonly ILog log = LogManager.GetLogger(typeof(SimpleServer));
 
-		private CancellationTokenSource _cts;
-		private CancellationToken _token;
-
-		private readonly ILog _log = LogManager.GetLogger(typeof(SimpleServer));
+		private CancellationTokenSource cts;
 
 		/// <summary>
 		/// Gets a value indicating if server is listening for new connections.
@@ -36,12 +34,29 @@ namespace ISimpleSocket
 		public event EventHandler<ServerStartFailedEventArgs> OnServerStartFailed;
 
 		/// <summary>
+		/// Unique <see cref="Guid"/> for current server instance.
+		/// Used in <see cref="ServerMonitor"/> to identify each servers.
+		/// </summary>
+		public Guid Id { get; } = Guid.NewGuid();
+
+		/// <summary>
+		/// Gets a value indicating active connections to the server.
+		/// </summary>
+		public int ConnectionsCount => ServerMonitor.GetServerConnectionsCount(this);
+
+		/// <summary>
+		/// Gets a value of maximum connections accepted by current server instance.
+		/// </summary>
+		public int MaximumConnections { get; } = 1000;
+
+		/// <summary>
 		/// Initializes an new instance of <see cref="SimpleServer"/> with the port.
 		/// </summary>
 		/// <param name="port">The port on which to listen for incoming connection attempts.</param>
 		protected SimpleServer(int port)
 		{
-			_listener = new TcpListener(IPAddress.Any, port);
+			listener = new TcpListener(IPAddress.Any, port);
+			ServerMonitor.RegisterServer(this);
 		}
 
 		/// <summary>
@@ -50,7 +65,8 @@ namespace ISimpleSocket
 		/// <param name="endPoint">The <see cref="IPEndPoint"/> which represents local endpoint.</param>
 		protected SimpleServer(IPEndPoint endPoint)
 		{
-			_listener = new TcpListener(endPoint);
+			listener = new TcpListener(endPoint);
+			ServerMonitor.RegisterServer(this);
 		}
 
 		/// <summary>
@@ -62,17 +78,15 @@ namespace ISimpleSocket
 		protected SimpleServer(IPEndPoint endPoint, int maxConnections)
 			: this(endPoint)
 		{
-			ConnectionMonitor.MaximumConnections = maxConnections;
+			MaximumConnections = maxConnections;
 		}
 
 		/// <summary>
 		/// Starts listening for new connections asynchronously.
 		/// </summary>
-		/// <returns></returns>
 		public async Task StartAsync()
 		{
-			_cts = new CancellationTokenSource();
-			_token = _cts.Token;
+			cts = new CancellationTokenSource();
 
 			if (!StartListener())
 			{
@@ -83,18 +97,18 @@ namespace ISimpleSocket
 
 			try
 			{
-				while (!_token.IsCancellationRequested)
+				while (!cts.Token.IsCancellationRequested)
 				{
 					await Task.Run(async () =>
 					{
-						if (ConnectionMonitor.State.Equals(MonitorState.SlotsAvailable))
+						if (ServerMonitor.GetServerMonitorState(this).Equals(MonitorState.SlotsAvailable))
 						{
-							var socket = await _listener.AcceptSocketAsync().ConfigureAwait(false);
+							var socket = await listener.AcceptSocketAsync().ConfigureAwait(false);
 
-							var connectionId = ConnectionMonitor.GetFirstAvailableSlot();
+							var connectionId = ServerMonitor.GetServerFirstAvailableSlot(this);
 							OnConnectionReceived?.Invoke(this, new ConnectionReceivedEventArgs(connectionId, socket));
 
-							_log.Info($"New connection accepted with id: { connectionId }.");
+							log.Info($"New connection accepted with id: { connectionId }.");
 						}
 					})
 					.ConfigureAwait(false);
@@ -102,23 +116,23 @@ namespace ISimpleSocket
 			}
 			catch (SocketException socketEx)
 			{
-				_log.Error($"SocketException occurred, message: { socketEx.Message }", socketEx);
+				log.Error($"SocketException occurred, message: { socketEx.Message }", socketEx);
 				stopReason = 1;
 			}
 			catch (ObjectDisposedException objectDisposedEx)
 			{
-				_log.Error($"ObjectDisposedException occurred, message: { objectDisposedEx.Message }", objectDisposedEx);
+				log.Error($"ObjectDisposedException occurred, message: { objectDisposedEx.Message }", objectDisposedEx);
 				stopReason = 2;
 			}
 			finally
 			{
-				_listener.Stop();
+				listener.Stop();
 				Listening = false;
 
 				if (stopReason != 0)
 				{
 					var x = stopReason == 1 ? "SocketException" : "ObjectDisposedException";
-					_log.Debug($"Listener stopped. Reason: { x }.");
+					log.Debug($"Listener stopped. Reason: { x }.");
 				}
 			}
 		}
@@ -128,28 +142,28 @@ namespace ISimpleSocket
 			try
 			{
 				// Clear out old connections, if any.
-				ConnectionMonitor.Clear();
+				ServerMonitor.ClearServerConnections(this);
 
-				_listener.Start(ConnectionMonitor.MaximumConnections);
+				listener.Start(MaximumConnections);
 
 				Listening = true;
-				_log.Info($"Listener started.");
+				log.Info($"Server started.");
 
 				return true;
 			}
 			catch (SocketException ex)
 			{
-				OnServerStartFailed?.Invoke(this, new ServerStartFailedEventArgs(ex));
+				OnServerStartFailed?.Invoke(this, new ServerStartFailedEventArgs(ex.SocketErrorCode));
 
-				_log.Error($"Failed to start listener, message: { ex.Message }", ex);
+				log.Error($"Failed to start listener, message: { ex.Message }", ex);
 				return false;
 			}
 		}
 
 		/// <summary>
-		/// Cancels token source, which makes the asynchronous Task <see cref="StartAsync"/> stop listening for new connections.
+		/// Cancels token source, which makes the asynchronous Task <see cref="StartAsync"/> to stop listening for new connections.
 		/// </summary>
-		public void Stop() => _cts?.Cancel();
+		public void Stop() => cts?.Cancel();
 
 		/// <summary>
 		/// Releases all resourced used by current instance of <see cref="SimpleServer"/>.
@@ -168,10 +182,12 @@ namespace ISimpleSocket
 		{
 			if (disposing)
 			{
-				_cts?.Cancel();
-				_cts?.Dispose();
+				cts?.Cancel();
+				cts?.Dispose();
 
-				_log.Debug($"Dispose({ disposing }) called, and object is disposed.");
+				ServerMonitor.UnRegisterServer(this);
+
+				log.Debug($"Dispose({ disposing }) called, and object is disposed.");
 			}
 		}
 	}
