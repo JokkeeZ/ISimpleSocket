@@ -156,6 +156,7 @@ namespace ISimpleSocket.Client
 				if (error != SocketError.Success)
 				{
 					OnSocketError?.Invoke(this, new ConnectionSocketErrorEventArgs(error));
+					Disconnect();
 					return;
 				}
 			}
