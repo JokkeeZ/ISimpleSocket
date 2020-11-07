@@ -13,11 +13,6 @@ namespace ISimpleSocket.Client
 		int Id { get; }
 
 		/// <summary>
-		/// Gets a value that indicates, if connection is disposed.
-		/// </summary>
-		bool IsDisposed { get; }
-
-		/// <summary>
 		/// Gets a value that indicates, if connection is connected to the server.
 		/// </summary>
 		bool Connected { get; }

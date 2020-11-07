@@ -12,13 +12,9 @@ namespace ISimpleSocket.Client
 	/// </summary>
 	public abstract class SimpleConnection : ISimpleConnection
 	{
+		private bool disposed;
 		private readonly byte[] buffer;
 		private readonly ILog log = LogManager.GetLogger(typeof(SimpleConnection));
-
-		/// <summary>
-		/// Gets a value that indicates, if connection is disposed.
-		/// </summary>
-		public bool IsDisposed { get; private set; }
 
 		/// <summary>
 		/// Gets current <see cref="System.Net.Sockets.Socket"/> instance.
@@ -158,11 +154,7 @@ namespace ISimpleSocket.Client
 			{
 				log.Error($"Failed to receiving data with id: { Id }, exception message: { ex.Message }", ex);
 
-				if (!IsDisposed)
-				{
-					Disconnect();
-				}
-
+				Disconnect();
 				return false;
 			}
 		}
@@ -177,6 +169,7 @@ namespace ISimpleSocket.Client
 				if (error != SocketError.Success)
 				{
 					OnSocketError?.Invoke(this, new ConnectionSocketErrorEventArgs(error));
+
 					Disconnect();
 					return;
 				}
@@ -185,21 +178,13 @@ namespace ISimpleSocket.Client
 			{
 				log.Error(ex.Message, ex);
 
-				if (!IsDisposed)
-				{
-					Disconnect();
-				}
-
+				Disconnect();
 				return;
 			}
 
-			if (received <= 0)
+			if (received <= 0 && !disposed)
 			{
-				if (!IsDisposed)
-				{
-					Disconnect();
-				}
-
+				Disconnect();
 				return;
 			}
 
@@ -231,11 +216,7 @@ namespace ISimpleSocket.Client
 			catch (Exception ex) when (ex is SocketException or ObjectDisposedException)
 			{
 				log.Info($"Handled exception! Connection with id: { Id } failed to begin receive incoming data. Reason: { ex.Message }, Connection will disconnect.");
-
-				if (!IsDisposed)
-				{
-					Disconnect();
-				}
+				Disconnect();
 			}
 		}
 
@@ -244,6 +225,11 @@ namespace ISimpleSocket.Client
 		/// </summary>
 		public void Disconnect()
 		{
+			if (disposed || !Connected)
+			{
+				return;
+			}
+
 			try
 			{
 				Socket?.Shutdown(SocketShutdown.Both);
@@ -251,9 +237,13 @@ namespace ISimpleSocket.Client
 
 				log.Debug($"Connection with id: { Id } disconnected.");
 			}
+			catch (Exception ex) when (ex is SocketException or ObjectDisposedException)
+			{
+				log.Debug($"Handled exception! Connection with id: { Id } had an exception while disconnecting.");
+			}
 			finally
 			{
-				if (!IsDisposed)
+				if (!disposed)
 				{
 					log.Debug($"Connection with id: { Id } firing OnConnectionClosed event.");
 
@@ -288,10 +278,10 @@ namespace ISimpleSocket.Client
 		/// <param name="disposing">If true, disposes all managed resourced used by current instance of <see cref="SimpleConnection"/>.</param>
 		protected virtual void Dispose(bool disposing)
 		{
-			if (!IsDisposed && disposing && (Socket != null))
+			if (!disposed && disposing)
 			{
-				Socket.Dispose();
-				IsDisposed = true;
+				Socket?.Dispose();
+				disposed = true;
 
 				if (Server != null)
 				{
