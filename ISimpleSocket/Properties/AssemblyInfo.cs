@@ -8,6 +8,7 @@ using log4net.Config;
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("ISimpleSocket")]
 [assembly: AssemblyCopyright("Copyright © JokkeeZ 2018 - 2019")]
+[assembly: AssemblyCopyright("Copyright © JokkeeZ 2018 - 2020")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
