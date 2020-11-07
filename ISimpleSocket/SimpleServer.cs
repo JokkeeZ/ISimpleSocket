@@ -37,7 +37,7 @@ namespace ISimpleSocket
 		/// Unique <see cref="Guid"/> for current server instance.
 		/// Used in <see cref="ServerMonitor"/> to identify each servers.
 		/// </summary>
-		public Guid Id { get; } = Guid.NewGuid();
+		public Guid Id => Guid.NewGuid();
 
 		/// <summary>
 		/// Gets a value indicating active connections to the server.

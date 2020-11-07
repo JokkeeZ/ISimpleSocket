@@ -20,20 +20,20 @@ namespace ISimpleSocket
 
 		public static MonitorState GetServerMonitorState(ISimpleServer server)
 		{
-			var connectionsCount = GetServerConnectionsCount(server);
-			return connectionsCount == server.MaximumConnections ? MonitorState.SlotsFull : MonitorState.SlotsAvailable;
+			var count = GetServerConnectionsCount(server);
+			return count == server.MaximumConnections ? MonitorState.SlotsFull : MonitorState.SlotsAvailable;
 		}
 
 		public static int GetServerFirstAvailableSlot(ISimpleServer server)
 		{
-			var connectionsCount = GetServerConnectionsCount(server);
+			var count = GetServerConnectionsCount(server);
 
-			if (!servers[server].Contains(connectionsCount - 1) && (connectionsCount - 1 >= 0))
+			if (!servers[server].Contains(count - 1) && (count - 1 >= 0))
 			{
-				return connectionsCount - 1;
+				return count - 1;
 			}
 
-			return connectionsCount;
+			return count;
 		}
 
 		public static void AddConnectionToServer(ISimpleServer server, int connectionId)
@@ -63,12 +63,10 @@ namespace ISimpleSocket
 
 		public static void ClearServerConnections(ISimpleServer server)
 		{
-			if (!IsServerRegistered(server))
+			if (IsServerRegistered(server))
 			{
-				return;
+				servers[server].Clear();
 			}
-
-			servers[server].Clear();
 		}
 
 		public static void RegisterServer<T>(T server) where T : ISimpleServer
