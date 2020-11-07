@@ -95,6 +95,23 @@ namespace ISimpleSocket.Client
 			: this(server, socket, 1024) { }
 
 		/// <summary>
+		/// Initializes an new instance of the <see cref="SimpleConnection"/> with socket, and default buffer size: 1024.
+		/// <para><see cref="ISimpleServer"/> instance will not be set.</para>
+		/// </summary>
+		/// <param name="socket">Connection socket.</param>
+		protected SimpleConnection(Socket socket)
+			: this(null, socket, 1024) { }
+
+		/// <summary>
+		/// Initializes an new instance of the <see cref="SimpleConnection"/> with socket, and given buffer size.
+		/// <para><see cref="ISimpleServer"/> instance will not be set.</para>
+		/// </summary>
+		/// <param name="socket">Connection socket.</param>
+		/// <param name="bufferSize">Maximum amount of bytes buffer can have. Default: 1024</param>
+		protected SimpleConnection(Socket socket, int bufferSize = 1024)
+			: this(null, socket, bufferSize) { }
+
+		/// <summary>
 		/// Establishes a connection to a server.
 		/// </summary>
 		/// <param name="endpoint">An EndPoint that represents the server address.</param>
@@ -130,10 +147,14 @@ namespace ISimpleSocket.Client
 
 				log.Debug($"Connection started with id: { Id }");
 
-				ServerMonitor.AddConnectionToServer(Server, Id);
+				if (Server != null)
+				{
+					ServerMonitor.AddConnectionToServer(Server, Id);
+				}
+
 				return true;
 			}
-			catch (Exception ex) when (ex is SocketException || ex is ObjectDisposedException)
+			catch (Exception ex) when (ex is SocketException or ObjectDisposedException)
 			{
 				log.Error($"Failed to receiving data with id: { Id }, exception message: { ex.Message }", ex);
 
@@ -160,7 +181,7 @@ namespace ISimpleSocket.Client
 					return;
 				}
 			}
-			catch (Exception ex) when (ex is SocketException || ex is ObjectDisposedException)
+			catch (Exception ex) when (ex is SocketException or ObjectDisposedException)
 			{
 				log.Error(ex.Message, ex);
 
@@ -207,7 +228,7 @@ namespace ISimpleSocket.Client
 					OnSocketError?.Invoke(this, new ConnectionSocketErrorEventArgs(error));
 				}
 			}
-			catch (Exception ex) when (ex is SocketException || ex is ObjectDisposedException)
+			catch (Exception ex) when (ex is SocketException or ObjectDisposedException)
 			{
 				log.Info($"Handled exception! Connection with id: { Id } failed to begin receive incoming data. Reason: { ex.Message }, Connection will disconnect.");
 
@@ -272,7 +293,10 @@ namespace ISimpleSocket.Client
 				Socket.Dispose();
 				IsDisposed = true;
 
-				ServerMonitor.RemoveConnectionFromServer(Server, Id);
+				if (Server != null)
+				{
+					ServerMonitor.RemoveConnectionFromServer(Server, Id);
+				}
 
 				log.Debug($"Connection with id: { Id } called Dispose({ disposing }) and disposed.");
 			}
