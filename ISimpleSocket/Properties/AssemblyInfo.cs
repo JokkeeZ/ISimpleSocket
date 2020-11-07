@@ -7,7 +7,6 @@ using log4net.Config;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("ISimpleSocket")]
-[assembly: AssemblyCopyright("Copyright © JokkeeZ 2018 - 2019")]
 [assembly: AssemblyCopyright("Copyright © JokkeeZ 2018 - 2020")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -16,7 +15,7 @@ using log4net.Config;
 [assembly: Guid("2e6cbab7-5c1c-47a6-a0e1-ad58153bcc61")]
 
 
-[assembly: AssemblyVersion("0.1.0")]
-[assembly: AssemblyFileVersion("0.1.0")]
+[assembly: AssemblyVersion("0.1.1")]
+[assembly: AssemblyFileVersion("0.1.1")]
 
 [assembly: XmlConfigurator(ConfigFile = "log4net.config")]
