@@ -225,17 +225,15 @@ namespace ISimpleSocket.Client
 		/// </summary>
 		public void Disconnect()
 		{
-			if (disposed || !Connected)
-			{
-				return;
-			}
-
 			try
 			{
-				Socket?.Shutdown(SocketShutdown.Both);
-				Socket?.BeginDisconnect(false, _ => Socket?.EndDisconnect(_), null);
+				if (Connected && !disposed)
+				{
+					Socket?.Shutdown(SocketShutdown.Both);
+					Socket?.BeginDisconnect(false, _ => Socket?.EndDisconnect(_), null);
 
-				log.Debug($"Connection with id: { Id } disconnected.");
+					log.Debug($"Connection with id: { Id } disconnected.");
+				}
 			}
 			catch (Exception ex) when (ex is SocketException or ObjectDisposedException)
 			{
