@@ -24,9 +24,6 @@ namespace ISimpleSocket.Events
 		/// <param name="connectionId">Received connection id.</param>
 		/// <param name="socket">Received connection socket.</param>
 		public ConnectionReceivedEventArgs(int connectionId, Socket socket)
-		{
-			ConnectionId = connectionId;
-			Socket = socket;
-		}
+			=> (ConnectionId, Socket) = (connectionId, socket);
 	}
 }

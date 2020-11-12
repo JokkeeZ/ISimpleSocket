@@ -46,7 +46,7 @@ namespace ISimpleSocket
 			if (!servers[server].Contains(connectionId))
 			{
 				servers[server].Add(connectionId);
-				log.Info($"Added new connection to server: { server.Id }. { servers[server].Count } / { server.MaximumConnections } slots in-use.");
+				log.Debug($"Added new connection to server: { server.Id }. { servers[server].Count } / { server.MaximumConnections } slots in-use.");
 			}
 		}
 
@@ -58,7 +58,7 @@ namespace ISimpleSocket
 			}
 
 			servers[server].Remove(connectionId);
-			log.Info($"Removed connection from server: { server.Id }. { servers[server].Count } / { server.MaximumConnections } slots in-use.");
+			log.Debug($"Removed connection from server: { server.Id }. { servers[server].Count } / { server.MaximumConnections } slots in-use.");
 		}
 
 		public static void ClearServerConnections(ISimpleServer server)

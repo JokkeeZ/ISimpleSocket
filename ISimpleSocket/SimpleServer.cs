@@ -116,12 +116,12 @@ namespace ISimpleSocket
 			}
 			catch (SocketException socketEx)
 			{
-				log.Error($"SocketException occurred, message: { socketEx.Message }", socketEx);
+				log.Fatal($"SocketException occurred, message: { socketEx.Message }");
 				stopReason = 1;
 			}
 			catch (ObjectDisposedException objectDisposedEx)
 			{
-				log.Error($"ObjectDisposedException occurred, message: { objectDisposedEx.Message }", objectDisposedEx);
+				log.Fatal($"ObjectDisposedException occurred, message: { objectDisposedEx.Message }");
 				stopReason = 2;
 			}
 			finally
@@ -147,7 +147,7 @@ namespace ISimpleSocket
 				listener.Start(MaximumConnections);
 
 				Listening = true;
-				log.Info($"Server started.");
+				log.Info($"Server: { Id } started.");
 
 				return true;
 			}
@@ -155,7 +155,7 @@ namespace ISimpleSocket
 			{
 				OnServerStartFailed?.Invoke(this, new ServerStartFailedEventArgs(ex.SocketErrorCode));
 
-				log.Error($"Failed to start listener, message: { ex.Message }", ex);
+				log.Fatal($"Failed to start listener, message: { ex.Message }");
 				return false;
 			}
 		}
