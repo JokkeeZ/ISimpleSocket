@@ -17,5 +17,15 @@ namespace ISimpleSocket
 		/// Gets a value of maximum connections accepted by current server instance.
 		/// </summary>
 		int MaximumConnections { get; }
+
+		/// <summary>
+		/// Maximum length of pending connections queue.
+		/// </summary>
+		int Backlog { get; }
 	}
+}
+
+namespace System.Runtime.CompilerServices
+{
+	public class IsExternalInit { }
 }

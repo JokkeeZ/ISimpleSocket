@@ -2,7 +2,6 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
-using System.Threading.Tasks;
 using ISimpleSocket.Events;
 using log4net;
 
@@ -13,9 +12,10 @@ namespace ISimpleSocket
 	/// </summary>
 	public abstract class SimpleServer : ISimpleServer, IDisposable
 	{
-		private readonly TcpListener listener;
+		private readonly IPEndPoint ipEndPoint;
 		private readonly ILog log = LogManager.GetLogger(typeof(SimpleServer));
 
+		private ManualResetEvent newConnection;
 		private CancellationTokenSource cts;
 
 		/// <summary>
@@ -50,23 +50,34 @@ namespace ISimpleSocket
 		public int MaximumConnections { get; } = 1000;
 
 		/// <summary>
+		/// Gets a value of maximum length of pending connections queue.
+		/// </summary>
+		public int Backlog { get; }
+
+		/// <summary>
 		/// Initializes an new instance of <see cref="SimpleServer"/> with the port.
 		/// </summary>
 		/// <param name="port">The port on which to listen for incoming connection attempts.</param>
-		protected SimpleServer(int port)
+		/// <param name="backlog">Maximum length of pending connections queue. Default value is 100.</param>
+		protected SimpleServer(int port, int backlog = 100)
 		{
-			listener = new TcpListener(IPAddress.Any, port);
+			ipEndPoint = new(IPAddress.Any, port);
 			ServerMonitor.RegisterServer(this);
+
+			Backlog = backlog;
 		}
 
 		/// <summary>
 		/// Initializes an new instance of <see cref="SimpleServer"/> with the <see cref="IPEndPoint"/>.
 		/// </summary>
 		/// <param name="endPoint">The <see cref="IPEndPoint"/> which represents local endpoint.</param>
-		protected SimpleServer(IPEndPoint endPoint)
+		/// <param name="backlog">Maximum length of pending connections queue. Default value is 100.</param>
+		protected SimpleServer(IPEndPoint endPoint, int backlog = 100)
 		{
-			listener = new TcpListener(endPoint);
+			ipEndPoint = endPoint;
 			ServerMonitor.RegisterServer(this);
+
+			Backlog = backlog;
 		}
 
 		/// <summary>
@@ -75,94 +86,85 @@ namespace ISimpleSocket
 		/// </summary>
 		/// <param name="endPoint">The <see cref="IPEndPoint"/> which represents local endpoint.</param>
 		/// <param name="maxConnections">The amount of connections server will handle.</param>
-		protected SimpleServer(IPEndPoint endPoint, int maxConnections)
-			: this(endPoint)
-		{
-			MaximumConnections = maxConnections;
-		}
+		/// <param name="backlog">Maximum length of pending connections queue. Default value is 100.</param>
+		protected SimpleServer(IPEndPoint endPoint, int maxConnections, int backlog = 100)
+			: this(endPoint, backlog) => MaximumConnections = maxConnections;
 
 		/// <summary>
 		/// Starts listening for new connections asynchronously.
 		/// </summary>
-		public async Task StartAsync()
+		public void StartListening()
 		{
-			cts = new CancellationTokenSource();
+			cts = new();
+			newConnection = new(false);
 
-			if (!StartListener())
-			{
-				return;
-			}
+			// Clear out old connections, if any.
+			ServerMonitor.ClearServerConnections(this);
 
-			var stopReason = 0;
+			var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
 			try
 			{
-				while (!cts.Token.IsCancellationRequested)
-				{
-					await Task.Run(async () =>
-					{
-						if (ServerMonitor.GetServerMonitorState(this).Equals(MonitorState.SlotsAvailable))
-						{
-							var socket = await listener.AcceptSocketAsync().ConfigureAwait(false);
-
-							var connectionId = ServerMonitor.GetServerFirstAvailableSlot(this);
-							OnConnectionReceived?.Invoke(this, new ConnectionReceivedEventArgs(connectionId, socket));
-
-							log.Info($"New connection accepted with id: { connectionId }.");
-						}
-					})
-					.ConfigureAwait(false);
-				}
-			}
-			catch (SocketException socketEx)
-			{
-				log.Fatal($"SocketException occurred, message: { socketEx.Message }");
-				stopReason = 1;
-			}
-			catch (ObjectDisposedException objectDisposedEx)
-			{
-				log.Fatal($"ObjectDisposedException occurred, message: { objectDisposedEx.Message }");
-				stopReason = 2;
-			}
-			finally
-			{
-				listener.Stop();
-				Listening = false;
-
-				if (stopReason != 0)
-				{
-					var x = stopReason == 1 ? "SocketException" : "ObjectDisposedException";
-					log.Debug($"Listener stopped. Reason: { x }.");
-				}
-			}
-		}
-
-		private bool StartListener()
-		{
-			try
-			{
-				// Clear out old connections, if any.
-				ServerMonitor.ClearServerConnections(this);
-
-				listener.Start(MaximumConnections);
+				listener.Bind(ipEndPoint);
+				listener.Listen(Backlog);
 
 				Listening = true;
 				log.Info($"Server: { Id } started.");
 
-				return true;
-			}
-			catch (SocketException ex)
-			{
-				OnServerStartFailed?.Invoke(this, new ServerStartFailedEventArgs(ex.SocketErrorCode));
+				while (!cts.Token.IsCancellationRequested)
+				{
+					newConnection.Reset();
 
-				log.Fatal($"Failed to start listener, message: { ex.Message }");
-				return false;
+					listener.BeginAccept(new(AcceptConnectionCallback), listener);
+
+					newConnection.WaitOne();
+				}
+			}
+			catch (SocketException se)
+			{
+				OnServerStartFailed?.Invoke(this, new(se));
+			}
+			catch (ObjectDisposedException ode)
+			{
+				OnServerStartFailed?.Invoke(this, new(ode));
+			}
+			finally
+			{
+				listener.Shutdown(SocketShutdown.Both);
+				listener.Close();
+
+				Listening = false;
 			}
 		}
 
-		/// <summary>
-		/// Cancels token source, which makes the asynchronous Task <see cref="StartAsync"/> to stop listening for new connections.
-		/// </summary>
+		private void AcceptConnectionCallback(IAsyncResult ar)
+		{
+			newConnection.Set();
+
+			var listener = (Socket)ar.AsyncState;
+			var clientSocket = listener.EndAccept(ar);
+
+			if (ServerMonitor.GetServerMonitorState(this).Equals(MonitorState.SlotsFull))
+			{
+				RejectConnection(clientSocket);
+				return;
+			}
+
+			var connectionId = ServerMonitor.GetServerFirstAvailableSlot(this);
+			ServerMonitor.AddConnectionToServer(this, connectionId);
+
+			OnConnectionReceived?.Invoke(this, new(connectionId, clientSocket));
+
+			log.Info($"New connection accepted with id: { connectionId }.");
+		}
+
+		private void RejectConnection(Socket sck)
+		{
+			sck.Shutdown(SocketShutdown.Both);
+			sck.Close();
+			log.Info($"Server rejected connection. Reason: Server slots full.");
+		}
+
 		public void Stop() => cts?.Cancel();
 
 		/// <summary>
@@ -184,6 +186,8 @@ namespace ISimpleSocket
 			{
 				cts?.Cancel();
 				cts?.Dispose();
+
+				newConnection?.Dispose();
 
 				ServerMonitor.UnRegisterServer(this);
 

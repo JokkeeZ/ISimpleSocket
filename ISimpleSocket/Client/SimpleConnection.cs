@@ -168,7 +168,7 @@ namespace ISimpleSocket.Client
 				received = Socket.EndReceive(iAr, out var error);
 				if (error != SocketError.Success)
 				{
-					OnSocketError?.Invoke(this, new ConnectionSocketErrorEventArgs(error));
+					OnSocketError?.Invoke(this, new(error));
 
 					Disconnect();
 					return;
@@ -198,7 +198,7 @@ namespace ISimpleSocket.Client
 			var data = new byte[received];
 			Array.Copy(buffer, 0, data, 0, received);
 
-			OnDataReceived?.Invoke(this, new ConnectionReceivedDataEventArgs(data));
+			OnDataReceived?.Invoke(this, new(data));
 		}
 
 		private void BeginReceive()
@@ -210,7 +210,7 @@ namespace ISimpleSocket.Client
 				Socket?.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, out error, DataReceived, null);
 				if (error != SocketError.Success)
 				{
-					OnSocketError?.Invoke(this, new ConnectionSocketErrorEventArgs(error));
+					OnSocketError?.Invoke(this, new(error));
 				}
 			}
 			catch (Exception ex) when (ex is SocketException or ObjectDisposedException)
@@ -245,7 +245,7 @@ namespace ISimpleSocket.Client
 				{
 					log.Debug($"Connection with id: { Id } firing OnConnectionClosed event.");
 
-					OnConnectionClosed?.Invoke(this, new ConnectionClosedEventArgs(this));
+					OnConnectionClosed?.Invoke(this, new(this));
 					Dispose();
 				}
 			}
@@ -257,7 +257,7 @@ namespace ISimpleSocket.Client
 		/// <param name="data">Data to be sent.</param>
 		public void SendData(byte[] data)
 		{
-			OnDataSend?.Invoke(this, new ConnectionSendingDataEventArgs(data));
+			OnDataSend?.Invoke(this, new(data));
 			Socket?.BeginSend(data, 0, data.Length, 0, _ => Socket?.EndSend(_), null);
 		}
 

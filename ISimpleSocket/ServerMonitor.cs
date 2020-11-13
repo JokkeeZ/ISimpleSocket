@@ -5,7 +5,7 @@ namespace ISimpleSocket
 {
 	internal static class ServerMonitor
 	{
-		static readonly IDictionary<ISimpleServer, List<int>> servers = new Dictionary<ISimpleServer, List<int>>();
+		static readonly Dictionary<ISimpleServer, List<int>> servers = new();
 		static readonly ILog log = LogManager.GetLogger(typeof(ServerMonitor));
 
 		public static int GetServerConnectionsCount(ISimpleServer server)
@@ -73,7 +73,7 @@ namespace ISimpleSocket
 		{
 			if (!IsServerRegistered(server))
 			{
-				servers.Add(server, new List<int>(server.MaximumConnections));
+				servers.Add(server, new(server.MaximumConnections));
 			}
 		}
 
