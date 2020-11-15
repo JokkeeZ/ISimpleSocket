@@ -121,7 +121,6 @@ namespace ISimpleSocket.Client
 			}
 			catch (SocketException ex)
 			{
-				log.Error(ex.Message, ex);
 				return ex.SocketErrorCode;
 			}
 		}
@@ -235,9 +234,13 @@ namespace ISimpleSocket.Client
 					log.Debug($"Connection with id: { Id } disconnected.");
 				}
 			}
-			catch (Exception ex) when (ex is SocketException or ObjectDisposedException)
+			catch (ObjectDisposedException)
 			{
-				log.Debug($"Handled exception! Connection with id: { Id } had an exception while disconnecting.");
+				log.Debug($"Connection with id: { Id } trying to disconnect disposed connection.");
+			}
+			catch (SocketException e)
+			{
+				log.Debug($"Connection with id: { Id } got an SocketException. Message: {e.Message}");
 			}
 			finally
 			{
