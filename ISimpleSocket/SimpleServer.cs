@@ -105,13 +105,9 @@ namespace ISimpleSocket
 					newConnection.WaitOne();
 				}
 			}
-			catch (SocketException se)
+			catch (SocketException e)
 			{
-				OnServerStartFailed?.Invoke(this, new(se));
-			}
-			catch (ObjectDisposedException ode)
-			{
-				OnServerStartFailed?.Invoke(this, new(ode));
+				OnServerStartFailed?.Invoke(this, new(e));
 			}
 
 			if (listener.Connected)
