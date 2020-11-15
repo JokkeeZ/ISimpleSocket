@@ -8,7 +8,7 @@ using log4net;
 namespace ISimpleSocket
 {
 	/// <summary>
-	/// Provides a wrapper for <see cref="TcpListener"/> with asynchronous socket accepting.
+	/// Base class for asynchronous socket server, which manages accepting pending TCP connections.
 	/// </summary>
 	public abstract class SimpleServer : ISimpleServer, IDisposable
 	{
@@ -45,27 +45,14 @@ namespace ISimpleSocket
 		public int ConnectionsCount => ServerMonitor.GetServerConnectionsCount(this);
 
 		/// <summary>
-		/// Gets a value of maximum connections accepted by current server instance.
+		/// Gets a value of maximum connections accepted by current server instance. Default: 1000
 		/// </summary>
-		public int MaximumConnections { get; } = 1000;
+		public int MaximumConnections { get; init; } = 1000;
 
 		/// <summary>
-		/// Gets a value of maximum length of pending connections queue.
+		/// Gets a value of maximum length of pending connections queue. Default: 100
 		/// </summary>
-		public int Backlog { get; }
-
-		/// <summary>
-		/// Initializes an new instance of <see cref="SimpleServer"/> with the port.
-		/// </summary>
-		/// <param name="port">The port on which to listen for incoming connection attempts.</param>
-		/// <param name="backlog">Maximum length of pending connections queue. Default value is 100.</param>
-		protected SimpleServer(int port, int backlog = 100)
-		{
-			ipEndPoint = new(IPAddress.Any, port);
-			ServerMonitor.RegisterServer(this);
-
-			Backlog = backlog;
-		}
+		public int Backlog { get; } = 100;
 
 		/// <summary>
 		/// Initializes an new instance of <see cref="SimpleServer"/> with the <see cref="IPEndPoint"/>.
@@ -81,14 +68,12 @@ namespace ISimpleSocket
 		}
 
 		/// <summary>
-		/// Initializes an new instance of <see cref="SimpleServer"/> with the <see cref="IPEndPoint"/>
-		/// and maximum amount of connections server will handle.
+		/// Initializes an new instance of <see cref="SimpleServer"/> with the port.
 		/// </summary>
-		/// <param name="endPoint">The <see cref="IPEndPoint"/> which represents local endpoint.</param>
-		/// <param name="maxConnections">The amount of connections server will handle.</param>
+		/// <param name="port">The port on which to listen for incoming connection attempts.</param>
 		/// <param name="backlog">Maximum length of pending connections queue. Default value is 100.</param>
-		protected SimpleServer(IPEndPoint endPoint, int maxConnections, int backlog = 100)
-			: this(endPoint, backlog) => MaximumConnections = maxConnections;
+		protected SimpleServer(int port, int backlog = 100)
+			: this(new IPEndPoint(IPAddress.Any, port), backlog) { }
 
 		/// <summary>
 		/// Starts listening for new connections asynchronously.
@@ -101,7 +86,7 @@ namespace ISimpleSocket
 			// Clear out old connections, if any.
 			ServerMonitor.ClearServerConnections(this);
 
-			var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+			using var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
 			try
 			{
@@ -132,7 +117,6 @@ namespace ISimpleSocket
 			if (listener.Connected)
 			{
 				listener.Shutdown(SocketShutdown.Both);
-				listener.Close();
 			}
 
 			Listening = false;
@@ -166,6 +150,9 @@ namespace ISimpleSocket
 			log.Info($"Server rejected connection. Reason: Server slots full.");
 		}
 
+		/// <summary>
+		/// Stops the server, which makes the socket to stop accepting pending connections. 
+		/// </summary>
 		public void Stop() => cts?.Cancel();
 
 		/// <summary>
@@ -190,9 +177,9 @@ namespace ISimpleSocket
 
 				newConnection?.Dispose();
 
-				ServerMonitor.UnRegisterServer(this);
+				ServerMonitor.UnregisterServer(this);
 
-				log.Debug($"Dispose({ disposing }) called, and object is disposed.");
+				log.Debug($"Dispose({ disposing }) called, and server is disposed.");
 			}
 		}
 	}

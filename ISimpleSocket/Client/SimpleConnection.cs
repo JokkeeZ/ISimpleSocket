@@ -151,44 +151,52 @@ namespace ISimpleSocket.Client
 			}
 			catch (Exception ex) when (ex is SocketException or ObjectDisposedException)
 			{
-				log.Error($"Failed to receiving data with id: { Id }, exception message: { ex.Message }", ex);
+				log.Error($"Connection with id: { Id } failed to start receiving data. Message: { ex.Message }");
 
 				Disconnect();
 				return false;
 			}
 		}
 
-		private void DataReceived(IAsyncResult iAr)
+		private void BeginReceive()
 		{
-			int received;
-
 			try
 			{
-				received = Socket.EndReceive(iAr, out var error);
+				var error = SocketError.Success;
+
+				var test = Socket?.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, out error, DataReceived, null);
+
 				if (error != SocketError.Success)
 				{
 					OnSocketError?.Invoke(this, new(error));
-
-					Disconnect();
-					return;
 				}
 			}
 			catch (Exception ex) when (ex is SocketException or ObjectDisposedException)
 			{
-				log.Error(ex.Message, ex);
+				log.Debug($"Connection with id: { Id } failed to begin receive incoming data. Reason: { ex.Message }, Connection will disconnect.");
+				Disconnect();
+			}
+		}
+
+		private void DataReceived(IAsyncResult iAr)
+		{
+			var received = Socket.EndReceive(iAr, out var error);
+
+			if (error != SocketError.Success)
+			{
+				OnSocketError?.Invoke(this, new(error));
 
 				Disconnect();
 				return;
 			}
 
-			if (received <= 0 && !disposed)
+			if (received == 0 && !disposed)
 			{
 				Disconnect();
 				return;
 			}
 
 			ProcessReceivedData(received);
-
 			BeginReceive();
 		}
 
@@ -198,25 +206,6 @@ namespace ISimpleSocket.Client
 			Array.Copy(buffer, 0, data, 0, received);
 
 			OnDataReceived?.Invoke(this, new(data));
-		}
-
-		private void BeginReceive()
-		{
-			try
-			{
-				var error = SocketError.Success;
-
-				Socket?.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, out error, DataReceived, null);
-				if (error != SocketError.Success)
-				{
-					OnSocketError?.Invoke(this, new(error));
-				}
-			}
-			catch (Exception ex) when (ex is SocketException or ObjectDisposedException)
-			{
-				log.Info($"Handled exception! Connection with id: { Id } failed to begin receive incoming data. Reason: { ex.Message }, Connection will disconnect.");
-				Disconnect();
-			}
 		}
 
 		/// <summary>
@@ -260,8 +249,28 @@ namespace ISimpleSocket.Client
 		/// <param name="data">Data to be sent.</param>
 		public void SendData(byte[] data)
 		{
-			OnDataSend?.Invoke(this, new(data));
-			Socket?.BeginSend(data, 0, data.Length, 0, _ => Socket?.EndSend(_), null);
+			if (data is null)
+			{
+				throw new ArgumentNullException(nameof(data));
+			}
+
+			try
+			{
+				var error = SocketError.Success;
+
+				Socket?.BeginSend(data, 0, data.Length, 0, out error, _ => Socket?.EndSend(_), null);
+				OnDataSend?.Invoke(this, new(data));
+
+				if (error != SocketError.Success)
+				{
+					OnSocketError?.Invoke(this, new(error));
+				}
+			}
+			catch (Exception ex) when (ex is SocketException or ObjectDisposedException)
+			{
+				log.Debug($"Connection with id: { Id } failed to send data. Reason: { ex.Message }, Connection will disconnect.");
+				Disconnect();
+			}
 		}
 
 		/// <summary>

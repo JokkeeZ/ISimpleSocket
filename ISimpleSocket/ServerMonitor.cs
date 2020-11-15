@@ -77,7 +77,7 @@ namespace ISimpleSocket
 			}
 		}
 
-		public static void UnRegisterServer<T>(T server) where T : ISimpleServer
+		public static void UnregisterServer<T>(T server) where T : ISimpleServer
 		{
 			if (IsServerRegistered(server))
 			{

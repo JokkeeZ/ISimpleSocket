@@ -16,7 +16,7 @@ namespace ISimpleSocket
 		/// <summary>
 		/// Gets a value of maximum connections accepted by current server instance.
 		/// </summary>
-		int MaximumConnections { get; }
+		int MaximumConnections { get; init; }
 
 		/// <summary>
 		/// Maximum length of pending connections queue.
