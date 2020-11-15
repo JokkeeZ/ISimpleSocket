@@ -128,13 +128,14 @@ namespace ISimpleSocket
 			{
 				OnServerStartFailed?.Invoke(this, new(ode));
 			}
-			finally
+
+			if (listener.Connected)
 			{
 				listener.Shutdown(SocketShutdown.Both);
 				listener.Close();
-
-				Listening = false;
 			}
+
+			Listening = false;
 		}
 
 		private void AcceptConnectionCallback(IAsyncResult ar)
