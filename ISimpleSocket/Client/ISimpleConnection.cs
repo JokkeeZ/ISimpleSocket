@@ -10,7 +10,7 @@ namespace ISimpleSocket.Client
 		/// <summary>
 		/// Unique connection id.
 		/// </summary>
-		int Id { get; }
+		int Id { get; set; }
 
 		/// <summary>
 		/// Gets a value that indicates, if connection is connected to the server.

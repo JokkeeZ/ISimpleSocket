@@ -30,7 +30,7 @@ namespace ISimpleSocket.Client
 		/// <summary>
 		/// Unique connection id.
 		/// </summary>
-		public int Id { get; }
+		public int Id { get; set; }
 
 		/// <summary>
 		/// Gets a server where connection belongs.
