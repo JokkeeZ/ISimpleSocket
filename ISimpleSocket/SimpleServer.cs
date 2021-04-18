@@ -128,7 +128,7 @@ namespace ISimpleSocket
 			if (ServerMonitor.GetServerMonitorState(this).Equals(MonitorState.SlotsFull))
 			{
 				RejectConnection(clientSocket);
-				log.Info($"Server rejected connection. Reason: Server slots full.");
+				log.Info("Server rejected connection. Reason: Server slots full.");
 				return;
 			}
 
