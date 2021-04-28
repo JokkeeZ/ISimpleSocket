@@ -8,6 +8,11 @@ namespace ISimpleSocket
 		static readonly Dictionary<ISimpleServer, List<int>> servers = new();
 		static readonly ILog log = LogManager.GetLogger(typeof(ServerMonitor));
 
+		/// <summary>
+		/// Gets server connections count, if server exists in <see cref="ServerMonitor"/>.
+		/// </summary>
+		/// <param name="server">Server to get connections count from.</param>
+		/// <returns>Returns server connections count, if server exists; otherwise -1.</returns>
 		public static int GetServerConnectionsCount(ISimpleServer server)
 		{
 			if (!IsServerRegistered(server))
@@ -18,12 +23,23 @@ namespace ISimpleSocket
 			return servers[server].Count;
 		}
 
+		/// <summary>
+		/// Gets server <see cref="MonitorState"/>. (If server accepts new connections.)
+		/// </summary>
+		/// <param name="server">Server to check for current state.</param>
+		/// <returns>Returns <see cref="MonitorState.SlotsAvailable"/>, if server accepts new connections;
+		/// otherwise <see cref="MonitorState.SlotsFull"/>.</returns>
 		public static MonitorState GetServerMonitorState(ISimpleServer server)
 		{
 			var count = GetServerConnectionsCount(server);
 			return count == server.MaximumConnections ? MonitorState.SlotsFull : MonitorState.SlotsAvailable;
 		}
 
+		/// <summary>
+		/// Gets first available slot in server connections list.
+		/// </summary>
+		/// <param name="server">Server to get available slot.</param>
+		/// <returns>Returns first available slot in the server.</returns>
 		public static int GetServerFirstAvailableSlot(ISimpleServer server)
 		{
 			var count = GetServerConnectionsCount(server);
@@ -36,6 +52,11 @@ namespace ISimpleSocket
 			return count;
 		}
 
+		/// <summary>
+		/// Adds connection to server by given connection id.
+		/// </summary>
+		/// <param name="server">Server where connection will be added.</param>
+		/// <param name="connectionId">Connection id.</param>
 		public static void AddConnectionToServer(ISimpleServer server, int connectionId)
 		{
 			if (!IsServerRegistered(server))
@@ -50,17 +71,28 @@ namespace ISimpleSocket
 			}
 		}
 
-		public static void RemoveConnectionFromServer(ISimpleServer server, int connectionId)
+		/// <summary>
+		/// Removes connection by id, from given server.
+		/// </summary>
+		/// <param name="server">Server where connection will be removed.</param>
+		/// <param name="connectionId">Connection id.</param>
+		/// <returns>Returns <see langword="true"/>, if server was found and connection was removed successfully; 
+		/// otherwise <see langword="false"/>.</returns>
+		public static bool RemoveConnectionFromServer(ISimpleServer server, int connectionId)
 		{
 			if (!IsServerRegistered(server))
 			{
-				return;
+				return false;
 			}
 
-			servers[server].Remove(connectionId);
-			log.Debug($"Removed connection from server: { server.Id }. { servers[server].Count } / { server.MaximumConnections } slots in-use.");
+			log.Debug($"Removing connection { connectionId } from server: { server.Id }.");
+			return servers[server].Remove(connectionId);
 		}
 
+		/// <summary>
+		/// Clears server connections List, if server exists in <see cref="ServerMonitor"/>.
+		/// </summary>
+		/// <param name="server">Server which connections List is cleared.</param>
 		public static void ClearServerConnections(ISimpleServer server)
 		{
 			if (IsServerRegistered(server))
@@ -69,7 +101,11 @@ namespace ISimpleSocket
 			}
 		}
 
-		public static void RegisterServer<T>(T server) where T : ISimpleServer
+		/// <summary>
+		/// Adds server to <see cref="ServerMonitor"/>, if it doesn't already exist.
+		/// </summary>
+		/// <param name="server">Server to add in to <see cref="ServerMonitor"/>.</param>
+		public static void RegisterServer(ISimpleServer server)
 		{
 			if (!IsServerRegistered(server))
 			{
@@ -77,7 +113,11 @@ namespace ISimpleSocket
 			}
 		}
 
-		public static void UnregisterServer<T>(T server) where T : ISimpleServer
+		/// <summary>
+		/// Removes server from <see cref="ServerMonitor"/>, if it exists.
+		/// </summary>
+		/// <param name="server">Server to remove from <see cref="ServerMonitor"/>.</param>
+		public static void UnregisterServer(ISimpleServer server)
 		{
 			if (IsServerRegistered(server))
 			{
