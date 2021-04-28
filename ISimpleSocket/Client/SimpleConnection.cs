@@ -110,13 +110,13 @@ namespace ISimpleSocket.Client
 		/// <summary>
 		/// Establishes a connection to a server.
 		/// </summary>
-		/// <param name="endpoint">An EndPoint that represents the server address.</param>
+		/// <param name="iPEndPoint">An EndPoint that represents the server address.</param>
 		/// <returns>Returns <see cref="SocketError.Success"/>, if connection was created; otherwise <see cref="SocketError"/>.</returns>
-		protected async Task<SocketError> ConnectAsync(IPEndPoint endpoint)
+		protected async Task<SocketError> ConnectAsync(IPEndPoint iPEndPoint)
 		{
 			try
 			{
-				await Socket.ConnectAsync(endpoint).ConfigureAwait(false);
+				await Socket.ConnectAsync(iPEndPoint).ConfigureAwait(false);
 				return SocketError.Success;
 			}
 			catch (SocketException ex)
@@ -164,7 +164,7 @@ namespace ISimpleSocket.Client
 			{
 				var error = SocketError.Success;
 
-				var test = Socket?.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, out error, DataReceived, null);
+				Socket?.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, out error, DataReceived, null);
 
 				if (error != SocketError.Success)
 				{
@@ -178,9 +178,9 @@ namespace ISimpleSocket.Client
 			}
 		}
 
-		private void DataReceived(IAsyncResult iAr)
+		private void DataReceived(IAsyncResult asyncResult)
 		{
-			var received = Socket.EndReceive(iAr, out var error);
+			var received = Socket.EndReceive(asyncResult, out var error);
 
 			if (error != SocketError.Success)
 			{
@@ -223,13 +223,9 @@ namespace ISimpleSocket.Client
 					log.Debug($"Connection with id: { Id } disconnected.");
 				}
 			}
-			catch (ObjectDisposedException)
+			catch (Exception ex) when (ex is ObjectDisposedException or SocketException)
 			{
-				log.Debug($"Connection with id: { Id } trying to disconnect disposed connection.");
-			}
-			catch (SocketException e)
-			{
-				log.Debug($"Connection with id: { Id } got an SocketException. Message: {e.Message}");
+				log.Debug($"Connection with id: { Id } got an Exception. Message: { ex.Message }");
 			}
 			finally
 			{

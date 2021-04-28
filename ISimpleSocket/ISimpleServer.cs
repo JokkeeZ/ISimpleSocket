@@ -25,6 +25,9 @@ namespace ISimpleSocket
 	}
 }
 
+/// <summary>
+/// Need to define this for .NET Framework
+/// </summary>
 namespace System.Runtime.CompilerServices
 {
 	public class IsExternalInit { }

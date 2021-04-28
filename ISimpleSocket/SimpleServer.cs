@@ -15,7 +15,7 @@ namespace ISimpleSocket
 		private readonly IPEndPoint ipEndPoint;
 		private readonly ILog log = LogManager.GetLogger(typeof(SimpleServer));
 
-		private ManualResetEvent newConnection;
+		private ManualResetEvent newConnectionResetEvent;
 		private CancellationTokenSource cts;
 
 		/// <summary>
@@ -57,14 +57,14 @@ namespace ISimpleSocket
 		/// <summary>
 		/// Initializes an new instance of <see cref="SimpleServer"/> with the <see cref="IPEndPoint"/>.
 		/// </summary>
-		/// <param name="endPoint">The <see cref="IPEndPoint"/> which represents local endpoint.</param>
+		/// <param name="iPEndPoint">The <see cref="IPEndPoint"/> which represents local endpoint.</param>
 		/// <param name="backlog">Maximum length of pending connections queue. Default value is 100.</param>
-		protected SimpleServer(IPEndPoint endPoint, int backlog = 100)
+		protected SimpleServer(IPEndPoint iPEndPoint, int backlog = 100)
 		{
-			ipEndPoint = endPoint;
-			ServerMonitor.RegisterServer(this);
-
+			ipEndPoint = iPEndPoint;
 			Backlog = backlog;
+
+			ServerMonitor.RegisterServer(this);
 		}
 
 		/// <summary>
@@ -81,7 +81,7 @@ namespace ISimpleSocket
 		public void StartListening()
 		{
 			cts = new();
-			newConnection = new(false);
+			newConnectionResetEvent = new(false);
 
 			// Clear out old connections, if any.
 			ServerMonitor.ClearServerConnections(this);
@@ -98,11 +98,11 @@ namespace ISimpleSocket
 
 				while (!cts.Token.IsCancellationRequested)
 				{
-					newConnection.Reset();
+					newConnectionResetEvent.Reset();
 
 					listener.BeginAccept(new(AcceptConnectionCallback), listener);
 
-					newConnection.WaitOne();
+					newConnectionResetEvent.WaitOne();
 				}
 			}
 			catch (SocketException e)
@@ -118,12 +118,11 @@ namespace ISimpleSocket
 			Listening = false;
 		}
 
-		private void AcceptConnectionCallback(IAsyncResult ar)
+		private void AcceptConnectionCallback(IAsyncResult asyncResult)
 		{
-			newConnection.Set();
+			newConnectionResetEvent.Set();
 
-			var listener = (Socket)ar.AsyncState;
-			var clientSocket = listener.EndAccept(ar);
+			var clientSocket = ((Socket)asyncResult.AsyncState).EndAccept(asyncResult);
 
 			if (ServerMonitor.GetServerMonitorState(this).Equals(MonitorState.SlotsFull))
 			{
@@ -171,7 +170,7 @@ namespace ISimpleSocket
 				cts?.Cancel();
 				cts?.Dispose();
 
-				newConnection?.Dispose();
+				newConnectionResetEvent?.Dispose();
 
 				ServerMonitor.UnregisterServer(this);
 
