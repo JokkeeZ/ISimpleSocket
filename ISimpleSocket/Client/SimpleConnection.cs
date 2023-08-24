@@ -9,6 +9,8 @@ namespace ISimpleSocket.Client
 	/// </summary>
 	public abstract class SimpleConnection : ISimpleConnection
 	{
+		private const int DefaultBufferSize = 1024;
+
 		private bool disposed;
 		private readonly byte[] buffer;
 
@@ -60,7 +62,7 @@ namespace ISimpleSocket.Client
 		/// <param name="id">Connection id.</param>
 		/// <param name="socket">Connection socket.</param>
 		/// <param name="bufferSize">Maximum amount of bytes buffer can have. Default: 1024</param>
-		protected SimpleConnection(ISimpleServer server, Socket socket, int id, int bufferSize = 1024)
+		protected SimpleConnection(ISimpleServer server, Socket socket, int id, int bufferSize = DefaultBufferSize)
 		{
 			Id = id;
 			Server = server;
@@ -75,7 +77,7 @@ namespace ISimpleSocket.Client
 		/// <param name="server"><see cref="ISimpleServer"/> instance where connection was created.</param>
 		/// <param name="socket">Connection socket.</param>
 		/// <param name="bufferSize">Maximum amount of bytes buffer can have. Default: 1024</param>
-		protected SimpleConnection(ISimpleServer server, Socket socket, int bufferSize = 1024)
+		protected SimpleConnection(ISimpleServer server, Socket socket, int bufferSize = DefaultBufferSize)
 			: this(server, socket, 0, bufferSize) { }
 
 		/// <summary>
@@ -84,7 +86,7 @@ namespace ISimpleSocket.Client
 		/// <param name="server"><see cref="ISimpleServer"/> instance where connection was created.</param>
 		/// <param name="socket">Connection socket.</param>
 		protected SimpleConnection(ISimpleServer server, Socket socket)
-			: this(server, socket, 1024) { }
+			: this(server, socket, DefaultBufferSize) { }
 
 		/// <summary>
 		/// Initializes an new instance of the <see cref="SimpleConnection"/> with socket, and default buffer size: 1024.
@@ -92,7 +94,7 @@ namespace ISimpleSocket.Client
 		/// </summary>
 		/// <param name="socket">Connection socket.</param>
 		protected SimpleConnection(Socket socket)
-			: this(null, socket, 1024) { }
+			: this(null, socket, DefaultBufferSize) { }
 
 		/// <summary>
 		/// Initializes an new instance of the <see cref="SimpleConnection"/> with socket, and given buffer size.
@@ -100,7 +102,7 @@ namespace ISimpleSocket.Client
 		/// </summary>
 		/// <param name="socket">Connection socket.</param>
 		/// <param name="bufferSize">Maximum amount of bytes buffer can have. Default: 1024</param>
-		protected SimpleConnection(Socket socket, int bufferSize = 1024)
+		protected SimpleConnection(Socket socket, int bufferSize = DefaultBufferSize)
 			: this(null, socket, bufferSize) { }
 
 		/// <summary>
@@ -127,20 +129,19 @@ namespace ISimpleSocket.Client
 		/// <returns>Returns true, if data was received successfully; otherwise false.</returns>
 		public bool Start()
 		{
+			if (!Connected)
+			{
+				return false;
+			}
+
+			if (Server != null)
+			{
+				ServerMonitor.AddConnectionToServer(Server, Id);
+			}
+
 			try
 			{
-				if (!Connected)
-				{
-					return false;
-				}
-
 				BeginReceive();
-
-				if (Server != null)
-				{
-					ServerMonitor.AddConnectionToServer(Server, Id);
-				}
-
 				return true;
 			}
 			catch (Exception ex) when (ex is SocketException or ObjectDisposedException)
@@ -187,16 +188,9 @@ namespace ISimpleSocket.Client
 				return;
 			}
 
-			ProcessReceivedData(received);
+			OnDataReceived?.Invoke(this, new(buffer[0..received]));
+
 			BeginReceive();
-		}
-
-		private void ProcessReceivedData(int received)
-		{
-			var data = new byte[received];
-			Array.Copy(buffer, 0, data, 0, received);
-
-			OnDataReceived?.Invoke(this, new(data));
 		}
 
 		/// <summary>
