@@ -1,7 +1,4 @@
-﻿using System;
-using System.Net.Sockets;
-using System.Threading.Tasks;
-
+﻿using System.Net.Sockets;
 using ISimpleSocket.Client;
 using ISimpleSocket.Client.Events;
 using ISimpleSocket.Events;
@@ -52,12 +49,12 @@ namespace ISimpleSocket.TestServer
 
 	class Program
 	{
-		static async Task Main(string[] args)
+		static void Main(string[] args)
 		{
 			Console.Title = "ISimpleSocket SERVER";
 
 			using var listener = new ConnectionListener(port: 2033);
-			await listener.StartAsync();
+			listener.StartListening();
 		}
 	}
 }
