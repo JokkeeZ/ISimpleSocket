@@ -1,8 +1,7 @@
-﻿namespace ISimpleSocket
+﻿namespace ISimpleSocket;
+
+internal enum MonitorState : int
 {
-	internal enum MonitorState : int
-	{
-		SlotsAvailable = 0,
-		SlotsFull,
-	}
+	SlotsAvailable = 0,
+	SlotsFull,
 }
