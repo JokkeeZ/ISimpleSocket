@@ -7,7 +7,7 @@ namespace ISimpleSocket;
 /// <summary>
 /// Base class for asynchronous socket server, which manages accepting pending TCP connections.
 /// </summary>
-public abstract class SimpleServer : ISimpleServer, IDisposable
+public abstract class SimpleServer : ISimpleServer
 {
 	private readonly IPEndPoint ipEndPoint;
 
@@ -28,6 +28,11 @@ public abstract class SimpleServer : ISimpleServer, IDisposable
 	/// Occurs when server start has failed.
 	/// </summary>
 	public event EventHandler<ServerStartFailedEventArgs> OnServerStartFailed;
+
+	/// <summary>
+	/// Occurs when server rejects an connection.
+	/// </summary>
+	public event EventHandler<ConnectionRejectedEventArgs> OnConnectionRejected;
 
 	/// <summary>
 	/// Unique <see cref="Guid"/> for current server instance.
@@ -132,8 +137,10 @@ public abstract class SimpleServer : ISimpleServer, IDisposable
 		OnConnectionReceived?.Invoke(this, new(connectionId, clientSocket));
 	}
 
-	static void RejectConnection(Socket sck)
+	private void RejectConnection(Socket sck)
 	{
+		OnConnectionRejected?.Invoke(this, new(sck));
+
 		sck.Shutdown(SocketShutdown.Both);
 		sck.Close();
 	}

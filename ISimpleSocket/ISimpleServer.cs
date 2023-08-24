@@ -3,7 +3,7 @@
 /// <summary>
 /// Represents an server which accepts <see cref="Client.ISimpleConnection"/> connection requests.
 /// </summary>
-public interface ISimpleServer
+public interface ISimpleServer : IDisposable
 {
 	/// <summary>
 	/// Unique <see cref="Guid"/> for current server instance.
