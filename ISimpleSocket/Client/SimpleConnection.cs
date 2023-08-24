@@ -1,9 +1,6 @@
-﻿using System;
-using System.Net;
+﻿using System.Net;
 using System.Net.Sockets;
-using System.Threading.Tasks;
 using ISimpleSocket.Client.Events;
-using log4net;
 
 namespace ISimpleSocket.Client
 {
@@ -14,7 +11,6 @@ namespace ISimpleSocket.Client
 	{
 		private bool disposed;
 		private readonly byte[] buffer;
-		private readonly ILog log = LogManager.GetLogger(typeof(SimpleConnection));
 
 		/// <summary>
 		/// Gets current <see cref="System.Net.Sockets.Socket"/> instance.
@@ -140,8 +136,6 @@ namespace ISimpleSocket.Client
 
 				BeginReceive();
 
-				log.Debug($"Connection started with id: { Id }");
-
 				if (Server != null)
 				{
 					ServerMonitor.AddConnectionToServer(Server, Id);
@@ -151,8 +145,6 @@ namespace ISimpleSocket.Client
 			}
 			catch (Exception ex) when (ex is SocketException or ObjectDisposedException)
 			{
-				log.Error($"Connection with id: { Id } failed to start receiving data. Message: { ex.Message }");
-
 				Disconnect();
 				return false;
 			}
@@ -173,7 +165,6 @@ namespace ISimpleSocket.Client
 			}
 			catch (Exception ex) when (ex is SocketException or ObjectDisposedException)
 			{
-				log.Debug($"Connection with id: { Id } failed to begin receive incoming data. Reason: { ex.Message }, Connection will disconnect.");
 				Disconnect();
 			}
 		}
@@ -219,20 +210,12 @@ namespace ISimpleSocket.Client
 				{
 					Socket?.Shutdown(SocketShutdown.Both);
 					Socket?.BeginDisconnect(false, _ => Socket?.EndDisconnect(_), null);
-
-					log.Debug($"Connection with id: { Id } disconnected.");
 				}
-			}
-			catch (Exception ex) when (ex is ObjectDisposedException or SocketException)
-			{
-				log.Debug($"Connection with id: { Id } got an Exception. Message: { ex.Message }");
 			}
 			finally
 			{
 				if (!disposed)
 				{
-					log.Debug($"Connection with id: { Id } firing OnConnectionClosed event.");
-
 					OnConnectionClosed?.Invoke(this, new(this));
 					Dispose();
 				}
@@ -264,7 +247,6 @@ namespace ISimpleSocket.Client
 			}
 			catch (Exception ex) when (ex is SocketException or ObjectDisposedException)
 			{
-				log.Debug($"Connection with id: { Id } failed to send data. Reason: { ex.Message }, Connection will disconnect.");
 				Disconnect();
 			}
 		}
@@ -293,8 +275,6 @@ namespace ISimpleSocket.Client
 				{
 					ServerMonitor.RemoveConnectionFromServer(Server, Id);
 				}
-
-				log.Debug($"Connection with id: { Id } called Dispose({ disposing }) and disposed.");
 			}
 		}
 	}

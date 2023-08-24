@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace ISimpleSocket
+﻿namespace ISimpleSocket
 {
 	/// <summary>
 	/// Represents an server which accepts <see cref="Client.ISimpleConnection"/> connection requests.
@@ -23,12 +21,4 @@ namespace ISimpleSocket
 		/// </summary>
 		int Backlog { get; }
 	}
-}
-
-/// <summary>
-/// Need to define this for .NET Framework
-/// </summary>
-namespace System.Runtime.CompilerServices
-{
-	public class IsExternalInit { }
 }

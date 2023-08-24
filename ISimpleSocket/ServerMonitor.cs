@@ -1,12 +1,8 @@
-﻿using System.Collections.Generic;
-using log4net;
-
-namespace ISimpleSocket
+﻿namespace ISimpleSocket
 {
 	internal static class ServerMonitor
 	{
 		static readonly Dictionary<ISimpleServer, List<int>> servers = new();
-		static readonly ILog log = LogManager.GetLogger(typeof(ServerMonitor));
 
 		/// <summary>
 		/// Gets server connections count, if server exists in <see cref="ServerMonitor"/>.
@@ -67,7 +63,6 @@ namespace ISimpleSocket
 			if (!servers[server].Contains(connectionId))
 			{
 				servers[server].Add(connectionId);
-				log.Debug($"Added new connection to server: { server.Id }. { servers[server].Count } / { server.MaximumConnections } slots in-use.");
 			}
 		}
 
@@ -85,7 +80,6 @@ namespace ISimpleSocket
 				return false;
 			}
 
-			log.Debug($"Removing connection { connectionId } from server: { server.Id }.");
 			return servers[server].Remove(connectionId);
 		}
 

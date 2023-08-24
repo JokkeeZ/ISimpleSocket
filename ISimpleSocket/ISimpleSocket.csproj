@@ -1,66 +1,11 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
-  <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{2E6CBAB7-5C1C-47A6-A0E1-AD58153BCC61}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>ISimpleSocket</RootNamespace>
-    <AssemblyName>ISimpleSocket</AssemblyName>
-    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
-    <LangVersion>latest</LangVersion>
-    <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile />
-    <NuGetPackageImportStamp>
-    </NuGetPackageImportStamp>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="Microsoft.CSharp" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Client\Events\ConnectionClosedEventArgs.cs" />
-    <Compile Include="Client\Events\ConnectionReceivedDataEventArgs.cs" />
-    <Compile Include="Client\Events\ConnectionSendingDataEventArgs.cs" />
-    <Compile Include="Client\Events\ConnectionSocketErrorEventArgs.cs" />
-    <Compile Include="Client\ISimpleConnection.cs" />
-    <Compile Include="Client\SimpleConnection.cs" />
-    <Compile Include="Events\ServerStartFailedEventArgs.cs" />
-    <Compile Include="ISimpleServer.cs" />
-    <Compile Include="MonitorState.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ServerMonitor.cs" />
-    <Compile Include="Events\ConnectionReceivedEventArgs.cs" />
-    <Compile Include="SimpleServer.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="log4net.config">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="log4net">
-      <Version>2.0.12</Version>
-    </PackageReference>
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net7.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Authors>JokkeeZ</Authors>
+		<Version>0.1.4</Version>
+		<Copyright>Copyright © JokkeeZ 2019 - 2023</Copyright>
+	</PropertyGroup>
+
 </Project>

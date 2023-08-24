@@ -1,9 +1,6 @@
-﻿using System;
-using System.Net;
+﻿using System.Net;
 using System.Net.Sockets;
-using System.Threading;
 using ISimpleSocket.Events;
-using log4net;
 
 namespace ISimpleSocket
 {
@@ -13,7 +10,6 @@ namespace ISimpleSocket
 	public abstract class SimpleServer : ISimpleServer, IDisposable
 	{
 		private readonly IPEndPoint ipEndPoint;
-		private readonly ILog log = LogManager.GetLogger(typeof(SimpleServer));
 
 		private ManualResetEvent newConnectionResetEvent;
 		private CancellationTokenSource cts;
@@ -94,7 +90,6 @@ namespace ISimpleSocket
 				listener.Listen(Backlog);
 
 				Listening = true;
-				log.Info($"Server: { Id } started.");
 
 				while (!cts.Token.IsCancellationRequested)
 				{
@@ -127,7 +122,6 @@ namespace ISimpleSocket
 			if (ServerMonitor.GetServerMonitorState(this).Equals(MonitorState.SlotsFull))
 			{
 				RejectConnection(clientSocket);
-				log.Info("Server rejected connection. Reason: Server slots full.");
 				return;
 			}
 
@@ -135,11 +129,9 @@ namespace ISimpleSocket
 			ServerMonitor.AddConnectionToServer(this, connectionId);
 
 			OnConnectionReceived?.Invoke(this, new(connectionId, clientSocket));
-
-			log.Info($"New connection accepted with id: { connectionId }.");
 		}
 
-		private void RejectConnection(Socket sck)
+		static void RejectConnection(Socket sck)
 		{
 			sck.Shutdown(SocketShutdown.Both);
 			sck.Close();
@@ -173,8 +165,6 @@ namespace ISimpleSocket
 				newConnectionResetEvent?.Dispose();
 
 				ServerMonitor.UnregisterServer(this);
-
-				log.Debug($"Dispose({ disposing }) called, and server is disposed.");
 			}
 		}
 	}
