@@ -22,7 +22,7 @@ public abstract class SimpleServer : ISimpleServer
 	/// <summary>
 	/// Occurs when new connection is accepted.
 	/// </summary>
-	public event EventHandler<ConnectionReceivedEventArgs> OnConnectionReceived;
+	public event EventHandler<ConnectionAcceptedEventArgs> OnConnectionAccepted;
 
 	/// <summary>
 	/// Occurs when server start has failed.
@@ -134,7 +134,7 @@ public abstract class SimpleServer : ISimpleServer
 		var connectionId = ServerMonitor.GetServerFirstAvailableSlot(this);
 		ServerMonitor.AddConnectionToServer(this, connectionId);
 
-		OnConnectionReceived?.Invoke(this, new(connectionId, clientSocket));
+		OnConnectionAccepted?.Invoke(this, new(connectionId, clientSocket));
 	}
 
 	private void RejectConnection(Socket sck)

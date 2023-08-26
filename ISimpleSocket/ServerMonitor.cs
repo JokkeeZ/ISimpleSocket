@@ -108,7 +108,7 @@ internal static class ServerMonitor
 	}
 
 	/// <summary>
-	/// Removes server from <see cref="ServerMonitor"/>, if it exists.
+	/// Removes server from <see cref="ServerMonitor"/>, if it's found.
 	/// </summary>
 	/// <param name="server">Server to remove from <see cref="ServerMonitor"/>.</param>
 	public static void UnregisterServer(ISimpleServer server)

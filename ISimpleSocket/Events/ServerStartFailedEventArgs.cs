@@ -6,7 +6,7 @@
 public sealed class ServerStartFailedEventArgs : EventArgs
 {
 	/// <summary>
-	/// Exception that occured during server start.
+	/// Exception that occurred during server start.
 	/// </summary>
 	public Exception Exception { get; }
 
