@@ -3,58 +3,57 @@ using ISimpleSocket.Client;
 using ISimpleSocket.Client.Events;
 using ISimpleSocket.Events;
 
-namespace ISimpleSocket.TestServer
+namespace ISimpleSocket.TestServer;
+
+class ConnectionListener : SimpleServer
 {
-	class ConnectionListener : SimpleServer
+	public ConnectionListener(int port) : base(port)
 	{
-		public ConnectionListener(int port) : base(port)
-		{
-			OnConnectionReceived += ConnectionReceived;
-		}
-
-		private void ConnectionReceived(object sender, ConnectionReceivedEventArgs e)
-		{
-			var connection = new Connection(this, e.Socket, e.ConnectionId);
-			if (connection.Start())
-			{
-				// Do something with connection.
-			}
-		}
+		OnConnectionAccepted += ConnectionAccepted;
 	}
 
-	class Connection : SimpleConnection
+	private void ConnectionAccepted(object sender, ConnectionAcceptedEventArgs e)
 	{
-		public Connection(ISimpleServer server, Socket socket, int id) : base(server, socket, id)
+		var connection = new Connection(this, e.Socket, e.ConnectionId);
+		if (connection.Start())
 		{
-			OnDataSend += DataSend;
-			OnDataReceived += DataReceived;
-			OnConnectionClosed += ConnectionClosed;
-		}
-
-		private void ConnectionClosed(object sender, ConnectionClosedEventArgs e)
-		{
-			// Do something when connection was closed.
-		}
-
-		private void DataReceived(object sender, ConnectionReceivedDataEventArgs e)
-		{
-			// Do something with received data.
-		}
-
-		private void DataSend(object sender, ConnectionSendingDataEventArgs e)
-		{
-			// Do something when data was sent.
+			// Do something with connection.
 		}
 	}
+}
 
-	class Program
+class Connection : SimpleConnection
+{
+	public Connection(ISimpleServer server, Socket socket, int id) : base(server, socket, id)
 	{
-		static void Main(string[] args)
-		{
-			Console.Title = "ISimpleSocket SERVER";
+		OnDataSend += DataSend;
+		OnDataReceived += DataReceived;
+		OnConnectionClosed += ConnectionClosed;
+	}
 
-			using var listener = new ConnectionListener(port: 2033);
-			listener.StartListening();
-		}
+	private void ConnectionClosed(object sender, ConnectionClosedEventArgs e)
+	{
+		// Do something when connection was closed.
+	}
+
+	private void DataReceived(object sender, ConnectionReceivedDataEventArgs e)
+	{
+		// Do something with received data.
+	}
+
+	private void DataSend(object sender, ConnectionSendingDataEventArgs e)
+	{
+		// Do something when data was sent.
+	}
+}
+
+class Program
+{
+	static void Main()
+	{
+		Console.Title = "ISimpleSocket SERVER";
+
+		using var listener = new ConnectionListener(port: 2033);
+		listener.StartListening();
 	}
 }
