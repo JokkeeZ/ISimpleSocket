@@ -1,41 +1,38 @@
-﻿using System;
+﻿namespace ISimpleSocket.Client;
 
-namespace ISimpleSocket.Client
+/// <summary>
+/// Represents an connection for <see cref="SimpleServer"/> instance.
+/// </summary>
+public interface ISimpleConnection : IDisposable
 {
 	/// <summary>
-	/// Represents an connection for <see cref="SimpleServer"/> instance.
+	/// Unique connection id.
 	/// </summary>
-	public interface ISimpleConnection : IDisposable
-	{
-		/// <summary>
-		/// Unique connection id.
-		/// </summary>
-		int Id { get; set; }
+	int Id { get; set; }
 
-		/// <summary>
-		/// Gets a value that indicates, if connection is connected to the server.
-		/// </summary>
-		bool Connected { get; }
+	/// <summary>
+	/// Gets a value that indicates, if connection is connected to the server.
+	/// </summary>
+	bool Connected { get; }
 
-		/// <summary>
-		/// Gets a server where connection belongs.
-		/// </summary>
-		public ISimpleServer Server { get; }
+	/// <summary>
+	/// Gets a server where connection belongs.
+	/// </summary>
+	public ISimpleServer Server { get; }
 
-		/// <summary>
-		/// Starts accepting new packets from the <see cref="ISimpleServer"/>.
-		/// </summary>
-		bool Start();
+	/// <summary>
+	/// Starts accepting new packets from the <see cref="ISimpleServer"/>.
+	/// </summary>
+	bool Start();
 
-		/// <summary>
-		/// Sends data to the server.
-		/// </summary>
-		/// <param name="data">Data to be sent.</param>
-		void SendData(byte[] data);
+	/// <summary>
+	/// Sends data to the server.
+	/// </summary>
+	/// <param name="data">Data to be sent.</param>
+	void SendData(byte[] data);
 
-		/// <summary>
-		/// Disconnects from the server.
-		/// </summary>
-		void Disconnect();
-	}
+	/// <summary>
+	/// Disconnects from the server.
+	/// </summary>
+	void Disconnect();
 }
