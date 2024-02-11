@@ -28,4 +28,9 @@
       <Using Include="System.Net" />
       <Using Include="System.Net.Sockets" />
     </ItemGroup>
+    <ItemGroup>
+      <None Update="log4net.config">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
 </Project>
