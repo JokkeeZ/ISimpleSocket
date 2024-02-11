@@ -13,6 +13,7 @@ public abstract class SimpleServer : ISimpleServer, IDisposable
 
 	private ManualResetEvent newConnectionResetEvent;
 	private CancellationTokenSource cts;
+	private Guid guid;
 
 	/// <summary>
 	/// Gets a value indicating if server is listening for new connections.
@@ -33,7 +34,18 @@ public abstract class SimpleServer : ISimpleServer, IDisposable
 	/// Unique <see cref="Guid"/> for current server instance.
 	/// Used in <see cref="ServerMonitor"/> to identify each servers.
 	/// </summary>
-	public Guid Id => Guid.NewGuid();
+	public Guid Id
+	{
+		get
+		{
+			if (guid == Guid.Empty)
+			{
+				guid = Guid.NewGuid();
+			}
+
+			return guid;
+		}
+	}
 
 	/// <summary>
 	/// Gets a value indicating active connections to the server.
@@ -130,9 +142,9 @@ public abstract class SimpleServer : ISimpleServer, IDisposable
 		var connectionId = ServerMonitor.GetServerFirstAvailableSlot(this);
 		ServerMonitor.AddConnectionToServer(this, connectionId);
 
-		OnConnectionReceived?.Invoke(this, new(connectionId, clientSocket));
-
 		log.Info($"New connection accepted with id: {connectionId}.");
+
+		OnConnectionReceived?.Invoke(this, new(connectionId, clientSocket));
 	}
 
 	static void RejectConnection(Socket sck)
