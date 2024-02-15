@@ -117,6 +117,7 @@ public abstract class SimpleConnection : ISimpleConnection
 		}
 		catch (SocketException ex)
 		{
+			log.Error("Failed to open connection. Exception:", ex);
 			return ex.SocketErrorCode;
 		}
 	}
