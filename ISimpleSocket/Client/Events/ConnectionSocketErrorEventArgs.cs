@@ -3,19 +3,14 @@
 namespace ISimpleSocket.Client.Events;
 
 /// <summary>
-/// Represents event arguments for event, which occurs when <see cref="SimpleConnection"/> has socket error.
+/// Represents event arguments for event,
+/// which occurs when <see cref="SimpleConnection"/> has socket error.
 /// </summary>
-public sealed class ConnectionSocketErrorEventArgs : EventArgs
+/// <param name="error">Error that occurred</param>
+public sealed class ConnectionSocketErrorEventArgs(SocketError error) : EventArgs
 {
-	/// <summary>
-	/// Gets a value of the <see cref="SocketError"/> that occurred.
-	/// </summary>
-	public SocketError Error { get; }
-
-	/// <summary>
-	/// Initializes an new instance of the <see cref="ConnectionSocketErrorEventArgs"/> 
-	/// with <see cref="SocketError"/> that occurred.
-	/// </summary>
-	/// <param name="error"></param>
-	public ConnectionSocketErrorEventArgs(SocketError error) => Error = error;
+    /// <summary>
+    /// Gets a value of the <see cref="SocketError"/> that occurred.
+    /// </summary>
+    public SocketError Error { get; } = error;
 }

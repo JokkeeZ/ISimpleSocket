@@ -4,175 +4,183 @@ using ISimpleSocket.Events;
 
 namespace ISimpleSocket;
 
-/// <summary>
-/// Base class for asynchronous socket server, which manages accepting pending TCP connections.
-/// </summary>
-public abstract class SimpleServer : ISimpleServer
+public delegate Task AsyncEventHandler<in TEventArgs>(object? sender, TEventArgs e);
+
+public abstract class SimpleServer : ISimpleServer, IDisposable
 {
-	private readonly IPEndPoint ipEndPoint;
+    private Socket? _listener;
+    private CancellationTokenSource? _cts;
+    private readonly IPEndPoint _ipEndPoint;
 
-	private ManualResetEvent newConnectionResetEvent;
-	private CancellationTokenSource cts;
+    /// <summary>
+    /// Gets a value indicating if server is listening for new connections.
+    /// </summary>
+    public bool Listening { get; private set; }
 
-	/// <summary>
-	/// Gets a value indicating if server is listening for new connections.
-	/// </summary>
-	public bool Listening { get; private set; }
+    public event AsyncEventHandler<ConnectionAcceptedEventArgs>? OnConnectionAccepted;
+    public event AsyncEventHandler<ServerStartFailedEventArgs>? OnServerStartFailed;
+    public event AsyncEventHandler<ConnectionRejectedEventArgs>? OnConnectionRejected;
 
-	/// <summary>
-	/// Occurs when new connection is accepted.
-	/// </summary>
-	public event EventHandler<ConnectionAcceptedEventArgs> OnConnectionAccepted;
+    /// <summary>
+    /// Unique <see cref="Guid"/> for current server instance.
+    /// Used in <see cref="ServerMonitor"/> to identify each server.
+    /// </summary>
+    public Guid Id => Guid.NewGuid();
 
-	/// <summary>
-	/// Occurs when server start has failed.
-	/// </summary>
-	public event EventHandler<ServerStartFailedEventArgs> OnServerStartFailed;
+    /// <summary>
+    /// Gets a value indicating active connections to the server.
+    /// </summary>
+    public int ConnectionCount => ServerMonitor.GetServerConnectionsCount(this);
 
-	/// <summary>
-	/// Occurs when server rejects an connection.
-	/// </summary>
-	public event EventHandler<ConnectionRejectedEventArgs> OnConnectionRejected;
+    /// <summary>
+    /// Gets a value of maximum connections accepted by current server instance. Default: 1000
+    /// </summary>
+    public int MaximumConnections { get; init; } = 1000;
 
-	/// <summary>
-	/// Unique <see cref="Guid"/> for current server instance.
-	/// Used in <see cref="ServerMonitor"/> to identify each servers.
-	/// </summary>
-	public Guid Id => Guid.NewGuid();
+    /// <summary>
+    /// Gets a value of maximum length of pending connections queue.
+    /// </summary>
+    public int Backlog { get; }
 
-	/// <summary>
-	/// Gets a value indicating active connections to the server.
-	/// </summary>
-	public int ConnectionsCount => ServerMonitor.GetServerConnectionsCount(this);
+    /// <summary>
+    /// Initializes a new instance of <see cref="SimpleServer"/> with the <see cref="IPEndPoint"/>.
+    /// </summary>
+    /// <param name="iPEndPoint">The <see cref="IPEndPoint"/> which represents local endpoint.</param>
+    /// <param name="backlog">Maximum length of pending connections queue. Default value is 100.</param>
+    protected SimpleServer(IPEndPoint iPEndPoint, int backlog = 100)
+    {
+        _ipEndPoint = iPEndPoint;
+        Backlog = backlog;
 
-	/// <summary>
-	/// Gets a value of maximum connections accepted by current server instance. Default: 1000
-	/// </summary>
-	public int MaximumConnections { get; init; } = 1000;
+        ServerMonitor.RegisterServer(this);
+    }
 
-	/// <summary>
-	/// Gets a value of maximum length of pending connections queue. Default: 100
-	/// </summary>
-	public int Backlog { get; } = 100;
+    /// <summary>
+    /// Starts listening for new connections asynchronously.
+    /// </summary>
+    public async Task StartAsync()
+    {
+        _cts = new();
 
-	/// <summary>
-	/// Initializes an new instance of <see cref="SimpleServer"/> with the <see cref="IPEndPoint"/>.
-	/// </summary>
-	/// <param name="iPEndPoint">The <see cref="IPEndPoint"/> which represents local endpoint.</param>
-	/// <param name="backlog">Maximum length of pending connections queue. Default value is 100.</param>
-	protected SimpleServer(IPEndPoint iPEndPoint, int backlog = 100)
-	{
-		ipEndPoint = iPEndPoint;
-		Backlog = backlog;
+        // Clear out old connections, if any.
+        ServerMonitor.ClearServerConnections(this);
 
-		ServerMonitor.RegisterServer(this);
-	}
+        _listener = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
-	/// <summary>
-	/// Initializes an new instance of <see cref="SimpleServer"/> with the port.
-	/// </summary>
-	/// <param name="port">The port on which to listen for incoming connection attempts.</param>
-	/// <param name="backlog">Maximum length of pending connections queue. Default value is 100.</param>
-	protected SimpleServer(int port, int backlog = 100)
-		: this(new IPEndPoint(IPAddress.Any, port), backlog) { }
+        try
+        {
+            _listener.Bind(_ipEndPoint);
+            _listener.Listen(Backlog);
 
-	/// <summary>
-	/// Starts listening for new connections asynchronously.
-	/// </summary>
-	public void StartListening()
-	{
-		cts = new();
-		newConnectionResetEvent = new(false);
+            Listening = true;
 
-		// Clear out old connections, if any.
-		ServerMonitor.ClearServerConnections(this);
+            while (!_cts.Token.IsCancellationRequested)
+            {
+                try
+                {
+                    var clientSocket = await _listener.AcceptAsync(_cts.Token);
 
-		using var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                    var monitorState = ServerMonitor.GetServerMonitorState(this);
+                    if (monitorState == MonitorState.SlotsFull)
+                    {
+                        await RejectConnectionAsync(clientSocket);
+                        continue;
+                    }
 
-		try
-		{
-			listener.Bind(ipEndPoint);
-			listener.Listen(Backlog);
+                    var connectionId = ServerMonitor.GetServerFirstAvailableSlot(this);
+                    ServerMonitor.AddConnectionToServer(this, connectionId);
 
-			Listening = true;
+                    if (OnConnectionAccepted != null)
+                    {
+                        _ = Task.Run(async () =>
+                        {
+                            await OnConnectionAccepted(this, new(connectionId, clientSocket));
+                        });
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+                catch (SocketException ex)
+                {
+                    if (OnServerStartFailed != null)
+                    {
+                        await OnServerStartFailed(this, new(ex));
+                    }
 
-			while (!cts.Token.IsCancellationRequested)
-			{
-				newConnectionResetEvent.Reset();
+                    break;
+                }
+            }
+        }
+        catch (SocketException ex)
+        {
+            if (OnServerStartFailed != null)
+            {
+                await OnServerStartFailed(this, new(ex));
+            }
+        }
+        finally
+        {
+            await StopInternalAsync();
+        }
+    }
 
-				listener.BeginAccept(new(AcceptConnectionCallback), listener);
+    private async Task RejectConnectionAsync(Socket socket)
+    {
+        if (OnConnectionRejected != null)
+        {
+            await OnConnectionRejected(this, new(socket));
+        }
 
-				newConnectionResetEvent.WaitOne();
-			}
-		}
-		catch (SocketException e)
-		{
-			OnServerStartFailed?.Invoke(this, new(e));
-		}
+        socket.Shutdown(SocketShutdown.Both);
+        socket.Close();
+    }
 
-		if (listener.Connected)
-		{
-			listener.Shutdown(SocketShutdown.Both);
-		}
+    private async Task StopInternalAsync()
+    {
+        if (_listener != null)
+        {
+            _listener.Close();
+            _listener = null;
+        }
 
-		Listening = false;
-	}
+        Listening = false;
+        await Task.CompletedTask;
+    }
 
-	private void AcceptConnectionCallback(IAsyncResult asyncResult)
-	{
-		newConnectionResetEvent.Set();
+    /// <summary>
+    /// Stops the server, which makes the socket to stop accepting pending connections. 
+    /// </summary>
+    public void Stop()
+    {
+        _cts?.Cancel();
+    }
 
-		var clientSocket = ((Socket)asyncResult.AsyncState).EndAccept(asyncResult);
+    /// <summary>
+    /// Releases all resourced used by current instance of <see cref="SimpleServer"/>.
+    /// </summary>
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
 
-		var monitorState = ServerMonitor.GetServerMonitorState(this);
-		if (monitorState is MonitorState.SlotsFull)
-		{
-			RejectConnection(clientSocket);
-			return;
-		}
+    /// <summary>
+    /// Releases all resourced used by current instance of <see cref="SimpleServer"/>.
+    /// </summary>
+    /// <param name="disposing">
+    /// If true, disposes all managed resourced used
+    /// by current instance of <see cref="SimpleServer"/>.
+    /// </param>
+    private void Dispose(bool disposing)
+    {
+        if (!disposing) return;
 
-		var connectionId = ServerMonitor.GetServerFirstAvailableSlot(this);
-		ServerMonitor.AddConnectionToServer(this, connectionId);
+        _cts?.Cancel();
+        _cts?.Dispose();
+        _listener?.Dispose();
 
-		OnConnectionAccepted?.Invoke(this, new(connectionId, clientSocket));
-	}
-
-	private void RejectConnection(Socket sck)
-	{
-		OnConnectionRejected?.Invoke(this, new(sck));
-
-		sck.Shutdown(SocketShutdown.Both);
-		sck.Close();
-	}
-
-	/// <summary>
-	/// Stops the server, which makes the socket to stop accepting pending connections. 
-	/// </summary>
-	public void Stop() => cts?.Cancel();
-
-	/// <summary>
-	/// Releases all resourced used by current instance of <see cref="SimpleServer"/>.
-	/// </summary>
-	public void Dispose()
-	{
-		Dispose(true);
-		GC.SuppressFinalize(this);
-	}
-
-	/// <summary>
-	/// Releases all resourced used by current instance of <see cref="SimpleServer"/>.
-	/// </summary>
-	/// <param name="disposing">If true, disposes all managed resourced used by current instance of <see cref="SimpleServer"/>.</param>
-	protected virtual void Dispose(bool disposing)
-	{
-		if (disposing)
-		{
-			cts?.Cancel();
-			cts?.Dispose();
-
-			newConnectionResetEvent?.Dispose();
-
-			ServerMonitor.UnregisterServer(this);
-		}
-	}
+        ServerMonitor.UnregisterServer(this);
+    }
 }

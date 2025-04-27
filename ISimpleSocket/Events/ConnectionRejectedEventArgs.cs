@@ -3,18 +3,14 @@
 namespace ISimpleSocket.Events;
 
 /// <summary>
-/// Represents event arguments for event, which occurs when connection was rejected by the server.
+/// Represents event arguments for event,
+/// which occurs when connection was rejected by the server.
 /// </summary>
-public sealed class ConnectionRejectedEventArgs
+/// <param name="socket">Rejected connection socket</param>
+public sealed class ConnectionRejectedEventArgs(Socket socket) : EventArgs
 {
-	/// <summary>
-	/// Rejected connection socket.
-	/// </summary>
-	public Socket Socket { get; }
-
-	/// <summary>
-	/// Initializes an new instance of <see cref="ConnectionRejectedEventArgs"/> with rejected socket.
-	/// </summary>
-	/// <param name="socket">Rejected connection socket</param>
-	public ConnectionRejectedEventArgs(Socket socket) => Socket = socket;
+    /// <summary>
+    /// Rejected connection socket.
+    /// </summary>
+    public Socket Socket { get; } = socket;
 }
