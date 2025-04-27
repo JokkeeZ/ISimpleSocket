@@ -1,11 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-	<PropertyGroup>
-		<TargetFramework>net8.0</TargetFramework>
-		<ImplicitUsings>enable</ImplicitUsings>
-		<Authors>JokkeeZ</Authors>
-		<Version>0.1.4</Version>
-		<Copyright>Copyright © JokkeeZ 2019 - 2023</Copyright>
-	</PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <Authors>JokkeeZ</Authors>
+        <Version>0.1.4</Version>
+        <Copyright>Copyright © JokkeeZ 2019 - 2023</Copyright>
+    </PropertyGroup>
 
 </Project>
